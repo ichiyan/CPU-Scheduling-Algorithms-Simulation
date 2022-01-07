@@ -1,7 +1,3 @@
-
-from typing import Sequence
-
-
 class Color():
     RED = '\033[31m'
     GREEN = '\033[32m'
@@ -38,17 +34,21 @@ def findWaitingTimes(burst_times, arrival_times, num_processes, algo):
     for i, p in enumerate(burst_times):
         processes.append({'key': i+1, 'arrival_time': arrival_times[i], 'burst_time': p})
 
-    if(algo == 1):
+    # FCFS or Preemptive SJF
+    if(algo == 1 or algo == 3):
         processes.sort(key = lambda p: p['arrival_time'])
+    # Nonpreemptive SJF
     elif(algo == 2):
         processes.sort(key = lambda p: p['burst_time'])
 
-    processes[0]['waiting_time'] = processes[0]['arrival_time']
+    time = processes[0]['waiting_time'] = processes[0]['arrival_time']
     if(algo == 1 or algo == 2):
         for i in range(1, num_processes):
             processes[i]['waiting_time'] = processes[i - 1]['burst_time'] + processes[i - 1]['waiting_time']
 
+    
     processes.sort(key = lambda p: p['key'])   
+    print(processes)
     return processes
 
 
@@ -67,24 +67,26 @@ def main():
         choice = input(f"{Color.WHITE} \nEnter your choice [1-7]: ")
         try:
             choice = int(choice)
-            try: 
-                burst_times = [ int(time) for time in input(f"Enter burst times in milliseconds separated by space (e.g., 24 3 3): ").split()]
-                try:
-                    arrival_times = [ int(time) for time in input(f"Enter arrival times in milliseconds separated by space (e.g, 0 1 2): ").split()]
-                    num_processes = len(burst_times)
-                    p_with_wt = findWaitingTimes(burst_times, arrival_times, num_processes, choice)
-                    total_wt = findTotalWaitingTime(p_with_wt)
-                    avg_wt = findAvgWaitingTime(total_wt, num_processes)
-                    print_tabular(p_with_wt, total_wt, avg_wt)
-                   
-                    if(choice == 7):
-                        loop = False
+            if(choice == 7):
+                loop = False
+            elif(choice not in range(1, 8)):
+                print(f"{Color.RED} \n Invalid choice. Choice must be from 1-7.")
+            else:
+                try: 
+                    burst_times = [ int(time) for time in input(f"Enter burst times in milliseconds separated by space (e.g., 24 3 3): ").split()]
+                    try:
+                        arrival_times = [ int(time) for time in input(f"Enter arrival times in milliseconds separated by space (e.g, 0 1 2): ").split()]
+                        num_processes = len(burst_times)
+                        p_with_wt = findWaitingTimes(burst_times, arrival_times, num_processes, choice)
+                        total_wt = findTotalWaitingTime(p_with_wt)
+                        avg_wt = findAvgWaitingTime(total_wt, num_processes)
+                        print_tabular(p_with_wt, total_wt, avg_wt)
+
+                    except ValueError:
+                        print(f"{Color.RED} \n Invalid input. Arrival time must be a number.")
 
                 except ValueError:
-                    print(f"{Color.RED} \n Invalid input. Arrival time must be a number.")
-
-            except ValueError:
-                print(f"{Color.RED} \n Invalid input. Burst time must be a number.")
+                    print(f"{Color.RED} \n Invalid input. Burst time must be a number.")
 
         except ValueError:
             print(f"{Color.RED} \n Invalid input. Choice must be a number from 1-7.")
