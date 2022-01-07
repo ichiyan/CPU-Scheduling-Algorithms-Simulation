@@ -30,12 +30,21 @@ def print_tabular(processes, total_wt, avg_wt):
     print(f" {Color.YELLOW} Average Waiting Time: {Color.WHITE} {avg_wt}")
 
 
+def make_process_list(burst_times, arrival_times):
+    processes = []
+    for i, p in enumerate(burst_times):
+        processes.append({'key': i+1, 'arrival_time': arrival_times[i], 'burst_time': p})
+
+    return processes
+
+
 def fcfs(processes, num_processes):
     processes.sort(key = lambda p: p['arrival_time'])
     processes[0]['waiting_time'] = processes[0]['arrival_time']
     for i in range(1, num_processes):
         processes[i]['waiting_time'] = processes[i - 1]['burst_time'] + processes[i - 1]['waiting_time']
     
+    # order of processes here is also the sequence 
     return processes
 
 
@@ -57,21 +66,54 @@ def np_sjf(processes, num_processes):
         prev = processes.index(curr_process)
         time = end
     
-    return processes
-
-def make_list(burst_times, arrival_times):
-    processes = []
-    for i, p in enumerate(burst_times):
-        processes.append({'key': i+1, 'arrival_time': arrival_times[i], 'burst_time': p})
-
+    # order of processes here is also the sequence
     return processes
 
 
-def findTotalWaitingTime(processes):
+def p_sjf(processes, num_processes):
+    processes.sort(key = lambda p: p['arrival_time'])
+    for p in processes:
+        p['remaining_time'] = p['burst_time']
+
+    ready_queue = [processes[0]]
+    curr = 0
+    next = 1
+    time = processes[0]['arrival_time']
+
+    # TO DO:
+    # negative remaining time
+
+    while next < num_processes: 
+        ready_queue[curr]['remaining_time'] -= processes[next]['arrival_time'] - time
+        if(ready_queue[curr]['remaining_time'] <= 0):
+            ready_queue[curr]['waiting_time'] = 0
+            if(ready_queue[curr]['remaining_time'] == 0):
+                 ready_queue.append(processes[next])                
+            ready_queue.remove(ready_queue[curr])
+        else:
+            ready_queue.append(processes[next])
+
+        curr_process = min(ready_queue, key = lambda p: p['remaining_time'])
+        curr = processes.index(curr_process)
+        time = processes[next]['arrival_time']
+        next += 1
+
+    ready_queue.sort(key = lambda p: p['remaining_time'])
+    for p in ready_queue:
+        p['completion_time'] = time + p['remaining_time']
+        p['waiting_time'] = p['completion_time'] - p['arrival_time'] - p['burst_time']
+        time = p['completion_time']
+
+    print(processes)
+    return processes
+
+
+
+def find_total_waiting_time(processes):
     return(sum( p['waiting_time'] for p in processes ))
 
 
-def findAvgWaitingTime(total_waiting_time, num_processes):
+def find_avg_waiting_time(total_waiting_time, num_processes):
     return total_waiting_time/num_processes
 
 
@@ -92,14 +134,16 @@ def main():
                     try:
                         arrival_times = [ int(time) for time in input(f"Enter arrival times in milliseconds separated by space (e.g, 0 1 2): ").split()]
                         num_processes = len(burst_times)
-                        processes = make_list(burst_times, arrival_times)
+                        processes = make_process_list(burst_times, arrival_times)
                         if(choice == 1):
                             p_with_wt = fcfs(processes, num_processes)
                         elif(choice == 2):
                             p_with_wt = np_sjf(processes, num_processes)
+                        elif(choice == 3):
+                            p_with_wt = p_sjf(processes, num_processes)
 
-                        total_wt = findTotalWaitingTime(p_with_wt)
-                        avg_wt = findAvgWaitingTime(total_wt, num_processes)
+                        total_wt = find_total_waiting_time(p_with_wt)
+                        avg_wt = find_avg_waiting_time(total_wt, num_processes)
                         print_tabular(p_with_wt, total_wt, avg_wt)
                     except ValueError:
                         print(f"{Color.RED} \n Invalid input. Arrival time must be a number.")
