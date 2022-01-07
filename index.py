@@ -80,23 +80,22 @@ def p_sjf(processes, num_processes):
     next = 1
     time = processes[0]['arrival_time']
 
-    # TO DO:
-    # negative remaining time
-
     while next < num_processes: 
         ready_queue[curr]['remaining_time'] -= processes[next]['arrival_time'] - time
-        if(ready_queue[curr]['remaining_time'] <= 0):
-            ready_queue[curr]['waiting_time'] = 0
-            if(ready_queue[curr]['remaining_time'] == 0):
-                 ready_queue.append(processes[next])                
-            ready_queue.remove(ready_queue[curr])
-        else:
-            ready_queue.append(processes[next])
+        rt = ready_queue[curr]['remaining_time']
+        if(rt <= 0):
+            if(rt < 0):
+                time += ready_queue[curr]['remaining_time'] * -1
 
-        curr_process = min(ready_queue, key = lambda p: p['remaining_time'])
-        curr = processes.index(curr_process)
-        time = processes[next]['arrival_time']
-        next += 1
+            ready_queue[curr]['waiting_time'] = ready_queue[curr]['remaining_time'] = 0
+            ready_queue.remove(ready_queue[curr])
+        
+        if(rt >= 0):
+            ready_queue.append(processes[next])
+            time = processes[next]['arrival_time']
+            next += 1
+
+        curr = ready_queue.index(  min(ready_queue, key = lambda p: p['remaining_time']) )
 
     ready_queue.sort(key = lambda p: p['remaining_time'])
     for p in ready_queue:
@@ -104,7 +103,6 @@ def p_sjf(processes, num_processes):
         p['waiting_time'] = p['completion_time'] - p['arrival_time'] - p['burst_time']
         time = p['completion_time']
 
-    print(processes)
     return processes
 
 
