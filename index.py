@@ -22,6 +22,7 @@ def print_menu():
 
 
 def print_tabular(processes, total_wt, avg_wt):
+    processes.sort(key = lambda p: p['key'])   
     print("\n {:<15} {:<20} {:<20} {:<20}".format(f"{Color.YELLOW} Process", f"{Color.YELLOW} Arrival Time", f"{Color.YELLOW} Burst Time", f"{Color.YELLOW} Waiting Time"))
     for p in processes:
             print("\n {:<15} {:<20} {:<20} {:<20}".format(f"{Color.WHITE} P{p['key']}", f"{Color.WHITE} {p['arrival_time']}", f"{Color.WHITE} {p['burst_time']}", f"{Color.WHITE} {p['waiting_time']}"))
@@ -29,26 +30,40 @@ def print_tabular(processes, total_wt, avg_wt):
     print(f" {Color.YELLOW} Average Waiting Time: {Color.WHITE} {avg_wt}")
 
 
-def findWaitingTimes(burst_times, arrival_times, num_processes, algo):
+def fcfs(processes, num_processes):
+    processes.sort(key = lambda p: p['arrival_time'])
+    processes[0]['waiting_time'] = processes[0]['arrival_time']
+    for i in range(1, num_processes):
+        processes[i]['waiting_time'] = processes[i - 1]['burst_time'] + processes[i - 1]['waiting_time']
+    
+    return processes
+
+
+def np_sjf(processes, num_processes):
+    processes.sort(key = lambda p: p['arrival_time'])
+    time = processes[0]['waiting_time'] = processes[0]['arrival_time']
+    ready_queue = []
+    completed = 1
+    prev = 0
+    while completed < num_processes:
+        end = time + processes[prev]['burst_time']
+        for p in processes:
+            if(p['arrival_time'] in range(time + 1, end + 1)):
+                ready_queue.append(p)
+        curr_process = min(ready_queue, key = lambda p: p['burst_time'])
+        curr_process['waiting_time'] = end - curr_process['arrival_time']
+        completed += 1
+        ready_queue.remove(curr_process)
+        prev = processes.index(curr_process)
+        time = end
+    
+    return processes
+
+def make_list(burst_times, arrival_times):
     processes = []
     for i, p in enumerate(burst_times):
         processes.append({'key': i+1, 'arrival_time': arrival_times[i], 'burst_time': p})
 
-    # FCFS or Preemptive SJF
-    if(algo == 1 or algo == 3):
-        processes.sort(key = lambda p: p['arrival_time'])
-    # Nonpreemptive SJF
-    elif(algo == 2):
-        processes.sort(key = lambda p: p['burst_time'])
-
-    time = processes[0]['waiting_time'] = processes[0]['arrival_time']
-    if(algo == 1 or algo == 2):
-        for i in range(1, num_processes):
-            processes[i]['waiting_time'] = processes[i - 1]['burst_time'] + processes[i - 1]['waiting_time']
-
-    
-    processes.sort(key = lambda p: p['key'])   
-    print(processes)
     return processes
 
 
@@ -77,11 +92,15 @@ def main():
                     try:
                         arrival_times = [ int(time) for time in input(f"Enter arrival times in milliseconds separated by space (e.g, 0 1 2): ").split()]
                         num_processes = len(burst_times)
-                        p_with_wt = findWaitingTimes(burst_times, arrival_times, num_processes, choice)
+                        processes = make_list(burst_times, arrival_times)
+                        if(choice == 1):
+                            p_with_wt = fcfs(processes, num_processes)
+                        elif(choice == 2):
+                            p_with_wt = np_sjf(processes, num_processes)
+
                         total_wt = findTotalWaitingTime(p_with_wt)
                         avg_wt = findAvgWaitingTime(total_wt, num_processes)
                         print_tabular(p_with_wt, total_wt, avg_wt)
-
                     except ValueError:
                         print(f"{Color.RED} \n Invalid input. Arrival time must be a number.")
 
