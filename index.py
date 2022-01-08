@@ -49,7 +49,7 @@ def print_chart_np(sched_type, processes, num_processes):
 
 
 def print_tabular(processes, total_wt, avg_wt):
-    processes.sort(key = lambda p: p['key'])   
+    processes.sort(key = lambda p: p['key'])  
     print("\n {:<15} {:<20} {:<20} {:<20}".format(f"{Color.YELLOW} Process", f"{Color.YELLOW} Arrival Time", f"{Color.YELLOW} Burst Time", f"{Color.YELLOW} Waiting Time"))
     for p in processes:
             print("\n {:<15} {:<20} {:<20} {:<20}".format(f"{Color.WHITE} P{p['key']}", f"{Color.WHITE} {p['arrival_time']}", f"{Color.WHITE} {p['burst_time']}", f"{Color.WHITE} {p['waiting_time']}"))
@@ -67,20 +67,20 @@ def make_process_list(burst_times, arrival_times):
 
 def fcfs(processes, num_processes):
     processes.sort(key = lambda p: p['arrival_time'])
-    processes[0]['waiting_time'] = processes[0]['arrival_time']
+    processes[0]['waiting_time'] = 0
+    time = processes[0]['start_time'] = processes[0]['arrival_time']
     for i in range(1, num_processes):
-        processes[i]['waiting_time'] = processes[i - 1]['burst_time'] + processes[i - 1]['waiting_time']
-    
-    # order of processes here is also the sequence 
-    return processes
+        processes[i]['waiting_time'] = processes[i - 1]['burst_time'] + processes[i - 1]['waiting_time'] - (processes[i]['arrival_time'] - processes[i-1]['arrival_time'])
+        time += processes[i - 1]['burst_time']
+        processes[i]['start_time'] = time
+
+    return processes, ''
 
 
 def np_sjf(processes, num_processes):
-    #processes.sort(key = lambda p: p['burst_time'])
     processes.sort(key = lambda p: p['arrival_time'])
-    time = processes[0]['waiting_time'] = processes[0]['arrival_time']
-    #if the smallest arrival time is not 0, won't it make all the waiting time wrong?
-    
+    time = processes[0]['start_time'] = processes[0]['arrival_time']
+    processes[0]['waiting_time'] = 0
     ready_queue = []
     completed = 1
     prev = 0
@@ -90,14 +90,15 @@ def np_sjf(processes, num_processes):
             if(p['arrival_time'] in range(time + 1, end + 1)):
                 ready_queue.append(p)
         curr_process = min(ready_queue, key = lambda p: p['burst_time'])
+        curr_process['start_time'] = end
         curr_process['waiting_time'] = end - curr_process['arrival_time']
         completed += 1
         ready_queue.remove(curr_process)
         prev = processes.index(curr_process)
         time = end
-   
-    # order of processes here is also the sequence
-    return processes
+
+    processes.sort(key = lambda p: p['waiting_time'])
+    return processes, ''
 
 
 def p_sjf(processes, num_processes):
@@ -109,10 +110,12 @@ def p_sjf(processes, num_processes):
     curr = 0
     next = 1
     time = processes[0]['arrival_time']
+    sequence = []
 
     while next < num_processes: 
         ready_queue[curr]['remaining_time'] -= processes[next]['arrival_time'] - time
         rt = ready_queue[curr]['remaining_time']
+        sequence.append({ 'key': ready_queue[curr]['key'], 'start_time': time })
         if(rt <= 0):
             if(rt < 0):
                 time += ready_queue[curr]['remaining_time'] * -1
@@ -131,9 +134,12 @@ def p_sjf(processes, num_processes):
     for p in ready_queue:
         p['completion_time'] = time + p['remaining_time']
         p['waiting_time'] = p['completion_time'] - p['arrival_time'] - p['burst_time']
+        sequence.append({ 'key': p['key'], 'start_time': time })
         time = p['completion_time']
 
-    return processes
+    # how do you want to solve for/display the completion time of the last process? 
+    # for now, sequence just contains the key and the start time
+    return processes, sequence
 
 
 
@@ -165,18 +171,21 @@ def main():
                         num_processes = len(burst_times)
                         processes = make_process_list(burst_times, arrival_times)
                         if(choice == 1):
-                            p_with_wt = fcfs(processes, num_processes)
+                            p_and_seq = fcfs(processes, num_processes)
                         elif(choice == 2):
-                            p_with_wt = np_sjf(processes, num_processes)
+                            p_and_seq = np_sjf(processes, num_processes)
                         elif(choice == 3):
-                            p_with_wt = p_sjf(processes, num_processes)
-
-
-                        total_wt = find_total_waiting_time(p_with_wt)
+                            p_and_seq = p_sjf(processes, num_processes)
+                
+                        total_wt = find_total_waiting_time(p_and_seq[0])
                         avg_wt = find_avg_waiting_time(total_wt, num_processes)
 
-                        print_chart_np(choice, processes, num_processes)
-                        print_tabular(p_with_wt, total_wt, avg_wt)
+                        # for chart, use p_and_seq[0] for nonpreemptive, p_and_seq[1] for preemptive
+                        # options:
+                        # option 1: add condition here to determine which to pass 
+                        # option 2: pass p_and_seq and add condition in function to use p_and_seq[0] if p_and_seq[1] == ''
+                        # print_chart_np(choice, processes, num_processes)
+                        print_tabular(p_and_seq[0], total_wt, avg_wt)
                     except ValueError:
                         print(f"{Color.RED} \n Invalid input. Arrival time must be a number.")
 
