@@ -110,6 +110,7 @@ def p_sjf(processes, num_processes):
     while next < num_processes: 
         ready_queue[curr]['remaining_time'] -= processes[next]['arrival_time'] - time
         rt = ready_queue[curr]['remaining_time']
+        sequence.append({ 'key': ready_queue[curr]['key'], 'start_time': time })
         if(rt <= 0):
             if(rt < 0):
                 time += ready_queue[curr]['remaining_time'] * -1
@@ -128,8 +129,11 @@ def p_sjf(processes, num_processes):
     for p in ready_queue:
         p['completion_time'] = time + p['remaining_time']
         p['waiting_time'] = p['completion_time'] - p['arrival_time'] - p['burst_time']
+        sequence.append({ 'key': p['key'], 'start_time': time })
         time = p['completion_time']
 
+    # how do you want to solve for/display the completion time of the last process? 
+    # for now, sequence just contains the key and the start time
     return processes, sequence
 
 
