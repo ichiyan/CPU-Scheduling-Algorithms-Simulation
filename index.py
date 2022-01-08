@@ -185,6 +185,12 @@ def main():
                         # option 1: add condition here to determine which to pass 
                         # option 2: pass p_and_seq and add condition in function to use p_and_seq[0] if p_and_seq[1] == ''
                         # print_chart_np(choice, processes, num_processes)
+                        if(choice<3):
+                            print_chart_np(choice, p_and_seq[0], num_processes)
+                        elif(choice == 5):
+                            print_chart_np(choice, p_and_seq[0], num_processes)
+                        else:
+                            print_chart_np(choice, p_and_seq[1], num_processes)
                         print_tabular(p_and_seq[0], total_wt, avg_wt)
                     except ValueError:
                         print(f"{Color.RED} \n Invalid input. Arrival time must be a number.")
