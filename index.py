@@ -21,6 +21,26 @@ def print_menu():
     print(67 * f"{Color.GREEN}-")
 
 
+def print_chart_np(sched_type, processes, num_processes):
+    #if(sched_type == 2):
+    processes.sort(key = lambda p: p['waiting_time'])
+    total_burst = float(sum( p['burst_time'] for p in processes ))
+    print("\n", 100 * f"{Color.CYAN}-")
+    for p in processes:
+        space = float(p['burst_time']) / total_burst * 100.0 / 2
+        print(f"{Color.CYAN}|", f"{Color.WHITE} P{p['key']}", int(space) * f"{Color.WHITE}.", end =" ")
+    print(f"{Color.CYAN}  |")
+    print("\n",100 * f"{Color.CYAN}-")
+    for ndx, p in processes:
+        space = float(p['burst_time']) / total_burst * 100.0 / 2
+        if(p['burst_time']>9):
+            print( f"{Color.CYAN}|", f"{Color.WHITE} {p['waiting_time']}", int(space) * f"{Color.WHITE}.", end =" ")
+        else:
+            print( f"{Color.CYAN}| ", f"{Color.WHITE} {p['waiting_time']}", int(space) * f"{Color.WHITE}.", end =" ")
+    print(f"{Color.WHITE} {processes[ndx]['waiting_time'] + processes[ndx]['burst_time']}", f"{Color.CYAN}| ")
+    print(100 * f"{Color.CYAN}-")
+
+
 def print_tabular(processes, total_wt, avg_wt):
     processes.sort(key = lambda p: p['key'])   
     print("\n {:<15} {:<20} {:<20} {:<20}".format(f"{Color.YELLOW} Process", f"{Color.YELLOW} Arrival Time", f"{Color.YELLOW} Burst Time", f"{Color.YELLOW} Waiting Time"))
@@ -40,8 +60,11 @@ def fcfs(processes, num_processes):
 
 
 def np_sjf(processes, num_processes):
-    processes.sort(key = lambda p: p['arrival_time'])
+    processes.sort(key = lambda p: p['burst_time'])
+    #processes.sort(key = lambda p: p['arrival_time'])
     time = processes[0]['waiting_time'] = processes[0]['arrival_time']
+    #if the smallest arrival time is not 0, won't it make all the waiting time wrong?
+    
     ready_queue = []
     completed = 1
     prev = 0
@@ -56,7 +79,7 @@ def np_sjf(processes, num_processes):
         ready_queue.remove(curr_process)
         prev = processes.index(curr_process)
         time = end
-    
+    # processes.sort(key = lambda p: p['arrival_time'])
     return processes
 
 def make_list(burst_times, arrival_times):
@@ -83,6 +106,7 @@ def main():
         try:
             choice = int(choice)
             if(choice == 7):
+                print(f"{Color.RED} \n TERMINATING PROGRAM")
                 loop = False
             elif(choice not in range(1, 8)):
                 print(f"{Color.RED} \n Invalid choice. Choice must be from 1-7.")
@@ -100,6 +124,7 @@ def main():
 
                         total_wt = findTotalWaitingTime(p_with_wt)
                         avg_wt = findAvgWaitingTime(total_wt, num_processes)
+                        print_chart_np(choice, processes, num_processes)
                         print_tabular(p_with_wt, total_wt, avg_wt)
                     except ValueError:
                         print(f"{Color.RED} \n Invalid input. Arrival time must be a number.")
