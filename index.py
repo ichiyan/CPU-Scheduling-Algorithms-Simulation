@@ -171,8 +171,8 @@ def main():
                         total_wt = find_total_waiting_time(p_and_seq[0])
                         avg_wt = find_avg_waiting_time(total_wt, num_processes)
 
-                        # for chart, use p_and_seq[0] for FCFS, the rest so far, use p_and_seq[1]
-                        # possible options:
+                        # for chart, use p_and_seq[0] for nonpreemptive, p_and_seq[1] for preemptive
+                        # options:
                         # option 1: add condition here to determine which to pass 
                         # option 2: pass p_and_seq and add condition in function to use p_and_seq[0] if p_and_seq[1] == ''
                         # print_chart_np(choice, processes, num_processes)
