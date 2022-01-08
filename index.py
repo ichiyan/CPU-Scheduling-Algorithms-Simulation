@@ -24,20 +24,22 @@ def print_menu():
 def print_chart_np(sched_type, processes, num_processes):
     #if(sched_type == 2):
     processes.sort(key = lambda p: p['waiting_time'])
+    #remove lang ni when naa na ang sequence[]
+
     total_burst = float(sum( p['burst_time'] for p in processes ))
     print("\n", 100 * f"{Color.CYAN}-")
     for p in processes:
         space = float(p['burst_time']) / total_burst * 100.0 / 2
         print(f"{Color.CYAN}|", f"{Color.WHITE} P{p['key']}", int(space) * f"{Color.WHITE}.", end =" ")
-    print(f"{Color.CYAN}  |")
+    print(f"{Color.CYAN}      |")
     print("\n",100 * f"{Color.CYAN}-")
-    for ndx, p in processes:
+    for p in processes:
         space = float(p['burst_time']) / total_burst * 100.0 / 2
-        if(p['burst_time']>9):
-            print( f"{Color.CYAN}|", f"{Color.WHITE} {p['waiting_time']}", int(space) * f"{Color.WHITE}.", end =" ")
-        else:
-            print( f"{Color.CYAN}| ", f"{Color.WHITE} {p['waiting_time']}", int(space) * f"{Color.WHITE}.", end =" ")
-    print(f"{Color.WHITE} {processes[ndx]['waiting_time'] + processes[ndx]['burst_time']}", f"{Color.CYAN}| ")
+        # if(p['burst_time']>9):
+        print( f"{Color.CYAN}|", f"{Color.WHITE} {p['waiting_time']}", int(space) * f"{Color.WHITE}.", end =" ")
+        # else:
+        #     print( f"{Color.CYAN} | ", f"{Color.WHITE} {p['waiting_time']}", int(space) * f"{Color.WHITE}.", end =" ")
+    print(f"{Color.WHITE} {processes[num_processes-1]['waiting_time'] + processes[num_processes-1]['burst_time']}", f"{Color.CYAN}| ")
     print(100 * f"{Color.CYAN}-")
 
 
@@ -69,8 +71,8 @@ def fcfs(processes, num_processes):
 
 
 def np_sjf(processes, num_processes):
-    processes.sort(key = lambda p: p['burst_time'])
-    #processes.sort(key = lambda p: p['arrival_time'])
+    #processes.sort(key = lambda p: p['burst_time'])
+    processes.sort(key = lambda p: p['arrival_time'])
     time = processes[0]['waiting_time'] = processes[0]['arrival_time']
     #if the smallest arrival time is not 0, won't it make all the waiting time wrong?
     
@@ -88,12 +90,8 @@ def np_sjf(processes, num_processes):
         ready_queue.remove(curr_process)
         prev = processes.index(curr_process)
         time = end
-<<<<<<< HEAD
-    # processes.sort(key = lambda p: p['arrival_time'])
-=======
-    
+   
     # order of processes here is also the sequence
->>>>>>> f2169c39e4eee250d2cac7ae8ccdee4baf2a6482
     return processes
 
 
@@ -168,14 +166,11 @@ def main():
                         elif(choice == 3):
                             p_with_wt = p_sjf(processes, num_processes)
 
-<<<<<<< HEAD
-                        total_wt = findTotalWaitingTime(p_with_wt)
-                        avg_wt = findAvgWaitingTime(total_wt, num_processes)
-                        print_chart_np(choice, processes, num_processes)
-=======
+
                         total_wt = find_total_waiting_time(p_with_wt)
                         avg_wt = find_avg_waiting_time(total_wt, num_processes)
->>>>>>> f2169c39e4eee250d2cac7ae8ccdee4baf2a6482
+
+                        print_chart_np(choice, processes, num_processes)
                         print_tabular(p_with_wt, total_wt, avg_wt)
                     except ValueError:
                         print(f"{Color.RED} \n Invalid input. Arrival time must be a number.")
