@@ -44,7 +44,7 @@ def print_chart_np(sched_type, processes, num_processes):
 
 
 def print_tabular(processes, total_wt, avg_wt):
-    processes.sort(key = lambda p: p['key'])  
+    processes.sort(key = lambda p: p['arrival_time'])  
     print("\n {:<15} {:<20} {:<20} {:<20}".format(f"{Color.YELLOW} Process", f"{Color.YELLOW} Arrival Time", f"{Color.YELLOW} Burst Time", f"{Color.YELLOW} Waiting Time"))
     for p in processes:
             print("\n {:<15} {:<20} {:<20} {:<20}".format(f"{Color.WHITE} P{p['key']}", f"{Color.WHITE} {p['arrival_time']}", f"{Color.WHITE} {p['burst_time']}", f"{Color.WHITE} {p['waiting_time']}"))
@@ -113,7 +113,7 @@ def p_sjf(processes, num_processes):
         sequence.append({ 'key': ready_queue[curr]['key'], 'start_time': time })
         if(rt <= 0):
             if(rt < 0):
-                time += ready_queue[curr]['remaining_time'] * -1
+                time += rt * -1
 
             ready_queue[curr]['waiting_time'] = ready_queue[curr]['remaining_time'] = 0
             ready_queue.remove(ready_queue[curr])
@@ -134,6 +134,54 @@ def p_sjf(processes, num_processes):
 
     # how do you want to solve for/display the completion time of the last process? 
     # for now, sequence just contains the key and the start time
+    return processes, sequence
+
+def rr(processes, num_processes, time_slice):
+    processes.sort(key = lambda p: p['arrival_time'])
+    for p in processes:
+        p['remaining_time'] = p['burst_time']
+        p['time_executing'] = 0
+
+    ready_queue = [processes[0]]
+    time = processes[0]['arrival_time']
+    sequence = [{'key': processes[0]['key'], 'start_time': processes[0]['arrival_time']}]
+    completed = curr =  0
+    
+    while completed < num_processes:
+        print(f"\n {sequence[-1]}")
+        ready_queue[curr]['remaining_time'] -= time_slice
+        rt =  ready_queue[curr]['remaining_time']
+        init_time = time
+        p = next( pr for pr in processes if pr['key'] == ready_queue[curr]['key'])
+        
+        if(rt <= 0):
+            p['last_start_time'] = time
+            if(rt < 0):
+                ready_queue[curr]['remaining_time'] = 0
+                time += time_slice + rt
+            completed += 1
+            ready_queue.remove(ready_queue[curr])
+            curr -= 1   
+
+        if(rt >= 0):
+            time += time_slice
+            if(rt > 0):
+                p['time_executing'] += time_slice   
+
+        for p in processes:
+            if p['arrival_time'] in range (init_time + 1, time + 1):
+                ready_queue.append(p)
+
+        if ready_queue:
+            curr = (curr + 1) % len(ready_queue)
+            sequence.append({'key': ready_queue[curr]['key'], 'start_time': time })
+        #else add time until ready queue gets populated
+        #curr = 0
+    
+    for pr in processes:
+        pr['waiting_time'] = pr['last_start_time'] - pr['time_executing'] - pr['arrival_time']
+
+    # print(f"\n {processes}")
     return processes, sequence
 
 
@@ -171,7 +219,14 @@ def main():
                             p_and_seq = np_sjf(processes, num_processes)
                         elif(choice == 3):
                             p_and_seq = p_sjf(processes, num_processes)
-                
+                        elif(choice == 4):
+                            time_slice = input("Enter time slice in milliseconds: ")
+                            try:
+                                time_slice = int(time_slice)
+                                p_and_seq = rr(processes, num_processes, time_slice)
+                            except ValueError:
+                                print(f"{Color.RED} \n Invalid input. Time quantum must be a number.")
+
                         total_wt = find_total_waiting_time(p_and_seq[0])
                         avg_wt = find_avg_waiting_time(total_wt, num_processes)
 
@@ -182,7 +237,7 @@ def main():
                         # print_chart_np(choice, processes, num_processes)
                         print_tabular(p_and_seq[0], total_wt, avg_wt)
                     except ValueError:
-                        print(f"{Color.RED} \n Invalid input. Arrival time must be a number.")
+                         print(f"{Color.RED} \n Invalid choice. Choice must be from 1-7.")
 
                 except ValueError:
                     print(f"{Color.RED} \n Invalid input. Burst time must be a number.")
