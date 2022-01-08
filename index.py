@@ -6,6 +6,7 @@ class Color():
     MAGENTA = '\033[35m'
     CYAN = '\033[36m'
     WHITE = '\033[37m'
+    BLACK = '\033[30m'
     
 def print_menu():
     print("\n", 30 * f"{Color.GREEN}-", f"{Color.GREEN}MENU", 30 * f"{Color.GREEN}-")
@@ -22,23 +23,27 @@ def print_menu():
 
 
 def print_chart_np(sched_type, processes, num_processes):
-    #if(sched_type == 2):
-    processes.sort(key = lambda p: p['waiting_time'])
-    #remove lang ni when naa na ang sequence[]
+    if(sched_type == 2):
+        processes.sort(key = lambda p: p['waiting_time'])
+    #remove lang ni when naa na ang sequence[] ?
 
     total_burst = float(sum( p['burst_time'] for p in processes ))
     print("\n", 100 * f"{Color.CYAN}-")
     for p in processes:
-        space = float(p['burst_time']) / total_burst * 100.0 / 2
-        print(f"{Color.CYAN}|", f"{Color.WHITE} P{p['key']}", int(space) * f"{Color.WHITE}.", end =" ")
+        space = int(float(p['burst_time']) / total_burst * 100.0 / 2)
+        print(f"{Color.CYAN}|", f"{Color.WHITE} P{p['key']}", space * f"{Color.WHITE}.", end =" ")
+        #x print(*(["|", "P{data}:{sizeN}".format(data=p['key'], sizeN=4), space * f"{Color.WHITE}."]), end =" ")
+        #print(" {:2}{:4}{:space} ".format(f"{Color.CYAN}|", f"{Color.WHITE} P{p['key']}", space * f"{Color.WHITE}."), end =" ")
     print(f"{Color.CYAN}      |")
     print("\n",100 * f"{Color.CYAN}-")
     for p in processes:
-        space = float(p['burst_time']) / total_burst * 100.0 / 2
-        # if(p['burst_time']>9):
-        print( f"{Color.CYAN}|", f"{Color.WHITE} {p['waiting_time']}", int(space) * f"{Color.WHITE}.", end =" ")
-        # else:
-        #     print( f"{Color.CYAN} | ", f"{Color.WHITE} {p['waiting_time']}", int(space) * f"{Color.WHITE}.", end =" ")
+        space = int(float(p['burst_time']) / total_burst * 100.0 / 2)
+        if(p['burst_time']>9):
+            print( f"{Color.CYAN}|", f"{Color.WHITE} {p['waiting_time']}", space * f"{Color.WHITE}.", end =" ")
+            #print(" {:2}{:4}{:space} ".format( f"{Color.CYAN}|", f"{Color.WHITE} {p['waiting_time']}", space * f"{Color.WHITE}."), end =" ")
+        else: #has extra space at the end for better alignment
+            print( f"{Color.CYAN}|", f"{Color.WHITE} {p['waiting_time']}", space * f"{Color.WHITE}.", end ="  ")
+            #print(" {:^space+6} ".format( f"{Color.CYAN} |", f"{Color.WHITE} {p['waiting_time']}", space * f"{Color.WHITE}.", end =" "))
     print(f"{Color.WHITE} {processes[num_processes-1]['waiting_time'] + processes[num_processes-1]['burst_time']}", f"{Color.CYAN}| ")
     print(100 * f"{Color.CYAN}-")
 
