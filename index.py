@@ -46,7 +46,7 @@ def print_chart_np(sched_type, processes, num_processes):
             #print(" {:^space+6} ".format( f"{Color.CYAN} |", f"{Color.WHITE} {p['waiting_time']}", space * f"{Color.WHITE}.", end =" "))
     print(f"{Color.WHITE} {processes[num_processes-1]['start_time'] + processes[num_processes-1]['burst_time']}", f"{Color.CYAN}| ")
     print(100 * f"{Color.CYAN}-")
-    print(processes[num_processes-1])
+    #print(processes[num_processes-1])
 
 def print_tabular(processes, total_wt, avg_wt):
     processes.sort(key = lambda p: p['key'])  
@@ -158,9 +158,6 @@ def np_ps(processes, num_processes):
     ready_queue = []
     completed = 1
     prev = 0
-
-    #processes.sort(key = lambda p: p['priority'])
-
     while completed < num_processes:
         end = time + processes[prev]['burst_time']
         for p in processes:
@@ -232,8 +229,9 @@ def main():
                         elif(choice == 5):
                             print_chart_np(choice, p_and_seq[0], num_processes)
                         else:
-                            print_chart_np(choice, p_and_seq[1], num_processes)
-                            print(p_and_seq[1])
+                            num_sequence = len(p_and_seq[1])
+                            print_chart_np(choice, p_and_seq[1], num_sequence)
+                            #print(p_and_seq[1])
                         print_tabular(p_and_seq[0], total_wt, avg_wt)
                     except ValueError:
                         print(f"{Color.RED} \n Invalid input. Arrival time must be a number.")
