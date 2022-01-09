@@ -198,29 +198,6 @@ def p_ps(processes, num_processes):
 
     while next < num_processes: 
         ready_queue[curr]['remaining_time'] -= processes[next]['arrival_time'] - time
-        rt = ready_queue[curr]['remaining_time']
-        sequence.append({ 'key': ready_queue[curr]['key'], 'start_time': time,  'burst_time': ready_queue[curr]['burst_time'] })
-        if(rt <= 0):
-            if(rt < 0):
-                time += ready_queue[curr]['remaining_time'] * -1
-
-            ready_queue[curr]['waiting_time'] = ready_queue[curr]['remaining_time'] = 0
-            ready_queue.remove(ready_queue[curr])
-        
-        if(rt >= 0):
-            ready_queue.append(processes[next])
-            time = processes[next]['arrival_time']
-            next += 1
-
-        curr = ready_queue.index(  min(ready_queue, key = lambda p: p['priority']) )
-
-    ready_queue.sort(key = lambda p: p['priority'])
-    for p in ready_queue:
-        p['completion_time'] = time + p['remaining_time']
-        p['waiting_time'] = time - p['arrival_time'] - p['burst_time']
-        sequence.append({ 'key': p['key'], 'start_time': time,  'burst_time': p['burst_time']})
-        time = p['completion_time']
-
 
     return processes, sequence
 
