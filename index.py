@@ -22,28 +22,38 @@ def print_menu():
     print(67 * f"{Color.GREEN}-")
 
 
-def print_chart_np(sched_type, processes, num_processes):
-    # if(sched_type == 2):
-    #     processes.sort(key = lambda p: p['waiting_time'])
-    #remove lang ni when naa na ang sequence[] ?
-
+def print_chart(processes, num_processes):
     total_burst = float(sum( p['burst_time'] for p in processes ))
     print("\n", 100 * f"{Color.CYAN}-")
-    for p in processes:
+    for ndx, p in enumerate(processes):
         space = int(float(p['burst_time']) / total_burst * 100.0 / 2)
-        print(f"{Color.CYAN}|", f"{Color.WHITE} P{p['key']}", space * f"{Color.WHITE}.", end =" ")
+        if(p['key'] == processes[ndx-1]['key']): #if current is same as previous
+            print(space * f"{Color.WHITE}.", end ="")
+        else:
+            if(p['burst_time']>9):
+                print(f"{Color.CYAN}|", f"{Color.WHITE} P{p['key']}", space * f"{Color.WHITE}.", end ="")
+            elif(p['key']==1):
+                print(f"{Color.CYAN} |", f"{Color.WHITE} P{p['key']}", space * f"{Color.WHITE}.", end ="")
+            else:
+                print(f"{Color.CYAN} |", f"{Color.WHITE} P{p['key']}", space * f"{Color.WHITE}.", end ="")
+
         #x print(*(["|", "P{data}:{sizeN}".format(data=p['key'], sizeN=4), space * f"{Color.WHITE}."]), end =" ")
         #print(" {:2}{:4}{:space} ".format(f"{Color.CYAN}|", f"{Color.WHITE} P{p['key']}", space * f"{Color.WHITE}."), end =" ")
     print(f"{Color.CYAN}      |")
     print("\n",100 * f"{Color.CYAN}-")
-    for p in processes:
+    for i, p in enumerate(processes):
         space = int(float(p['burst_time']) / total_burst * 100.0 / 2)
         if(p['burst_time']>9):
-            print( f"{Color.CYAN}|", f"{Color.WHITE} {p['start_time']}", space * f"{Color.WHITE}.", end =" ")
-            #print(" {:2}{:4}{:space} ".format( f"{Color.CYAN}|", f"{Color.WHITE} {p['waiting_time']}", space * f"{Color.WHITE}."), end =" ")
+            if(p['key'] == processes[i-1]['key']): #if current is same as previous
+                print( space * f"{Color.WHITE}.", end ="")
+            else:
+                print( f"{Color.CYAN}|", f"{Color.WHITE} {p['start_time']}", space * f"{Color.WHITE}.", end ="")
         else: #has extra space at the end for better alignment
-            print( f"{Color.CYAN}|", f"{Color.WHITE} {p['start_time']}", space * f"{Color.WHITE}.", end ="  ")
-            #print(" {:^space+6} ".format( f"{Color.CYAN} |", f"{Color.WHITE} {p['waiting_time']}", space * f"{Color.WHITE}.", end =" "))
+            if(p['key'] == processes[i-1]['key']): #if current is same as previous
+                print(space * f"{Color.WHITE}.", end ="")
+            else:
+                print( f"{Color.CYAN}  |", f"{Color.WHITE} {p['start_time']}", space * f"{Color.WHITE}.", end ="")
+
     print(f"{Color.WHITE} {processes[num_processes-1]['start_time'] + processes[num_processes-1]['burst_time']}", f"{Color.CYAN}| ")
     print(100 * f"{Color.CYAN}-")
     #print(processes[num_processes-1])
@@ -225,12 +235,12 @@ def main():
                         # option 2: pass p_and_seq and add condition in function to use p_and_seq[0] if p_and_seq[1] == ''
                         # print_chart_np(choice, processes, num_processes)
                         if(choice<3):
-                            print_chart_np(choice, p_and_seq[0], num_processes)
+                            print_chart(p_and_seq[0], num_processes)
                         elif(choice == 5):
-                            print_chart_np(choice, p_and_seq[0], num_processes)
+                            print_chart(p_and_seq[0], num_processes)
                         else:
                             num_sequence = len(p_and_seq[1])
-                            print_chart_np(choice, p_and_seq[1], num_sequence)
+                            print_chart(p_and_seq[1], num_sequence)
                             #print(p_and_seq[1])
                         print_tabular(p_and_seq[0], total_wt, avg_wt)
                     except ValueError:
