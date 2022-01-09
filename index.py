@@ -299,7 +299,15 @@ def p_ps(processes, num_processes):
         if(ready_queue[execute]['remaining_time'] == 0):
             ready_queue.remove(ready_queue[execute])
 
-    
+    for x, p in enumerate(processes):
+        temp = 0
+        sub_wait = 0
+        for trav, s in enumerate(sequence):
+            if(p['key'] == s['key']):
+                sub_wait += temp
+                temp = s['start_time']+s['burst_time']
+        p['waiting_time'] = temp - sub_wait
+
     print("done: ", ready_queue)
     print("seq", sequence)
     print("pro", processes)
