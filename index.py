@@ -136,55 +136,60 @@ def p_sjf(processes, num_processes):
     # for now, sequence just contains the key and the start time
     return processes, sequence
 
+
 def rr(processes, num_processes, time_slice):
     processes.sort(key = lambda p: p['arrival_time'])
     for p in processes:
         p['remaining_time'] = p['burst_time']
         p['time_executing'] = 0
 
+    not_arrived = processes.copy()
+    not_arrived.pop(0)
     ready_queue = [processes[0]]
     time = processes[0]['arrival_time']
-    sequence = [{'key': processes[0]['key'], 'start_time': processes[0]['arrival_time']}]
-    completed = curr =  0
-    
-    while completed < num_processes:
-        print(f"\n {sequence[-1]}")
-        ready_queue[curr]['remaining_time'] -= time_slice
-        rt =  ready_queue[curr]['remaining_time']
+    sequence = []
+    completed =  0
+
+    while(completed < num_processes):
         init_time = time
-        p = next( pr for pr in processes if pr['key'] == ready_queue[curr]['key'])
-        
+        if not ready_queue:
+            ready_queue.append(not_arrived[0])
+            not_arrived.pop(0)
+            NP_time = ready_queue[0]['arrival_time'] - init_time
+            sequence.append({'key': 'NP', 'start_time': init_time, 'burst_time': NP_time })  
+            time += NP_time
+
+        sequence.append({'key': ready_queue[0]['key'], 'start_time': time, 'burst_time': ready_queue[0]['remaining_time'] })  
+        ready_queue[0]['remaining_time'] -= time_slice
+        rt =  ready_queue[0]['remaining_time']
+        p = next( pr for pr in processes if pr['key'] == ready_queue[0]['key'])
         if(rt <= 0):
             p['last_start_time'] = time
-            if(rt < 0):
-                ready_queue[curr]['remaining_time'] = 0
-                time += time_slice + rt
             completed += 1
-            ready_queue.remove(ready_queue[curr])
-            curr -= 1   
-
+            if(rt < 0):
+                ready_queue[0]['remaining_time'] = 0
+                time += time_slice + rt
+                
         if(rt >= 0):
             time += time_slice
-            if(rt > 0):
-                p['time_executing'] += time_slice   
+        
+        popped = ready_queue.pop(0)
 
-        for p in processes:
-            if p['arrival_time'] in range (init_time + 1, time + 1):
-                ready_queue.append(p)
+        arrived_ctr = 0
+        for pna in not_arrived:
+            if pna['arrival_time'] in range (init_time, time + 1):
+                ready_queue.append(pna)
+                arrived_ctr += 1
+        del not_arrived[:arrived_ctr]
 
-        if ready_queue:
-            curr = (curr + 1) % len(ready_queue)
-            sequence.append({'key': ready_queue[curr]['key'], 'start_time': time })
-        #else add time until ready queue gets populated
-        #curr = 0
+        if(rt > 0):
+            p['time_executing'] += time_slice  
+            ready_queue.append(popped)
     
     for pr in processes:
         pr['waiting_time'] = pr['last_start_time'] - pr['time_executing'] - pr['arrival_time']
 
-    # print(f"\n {processes}")
     return processes, sequence
-
-
 
 def find_total_waiting_time(processes):
     return(sum( p['waiting_time'] for p in processes ))
