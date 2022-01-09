@@ -93,7 +93,7 @@ def fcfs(processes, num_processes):
         time += processes[i - 1]['burst_time']
         processes[i]['start_time'] = time
 
-    return processes, ''
+    return processes, ' '
 
 
 def np_sjf(processes, num_processes):
@@ -117,7 +117,7 @@ def np_sjf(processes, num_processes):
         time = end
 
     processes.sort(key = lambda p: p['waiting_time'])
-    return processes, ''
+    return processes, ' '
 
 
 def p_sjf(processes, num_processes):
@@ -158,6 +158,7 @@ def p_sjf(processes, num_processes):
 
     # how do you want to solve for/display the completion time of the last process? 
     # for now, sequence just contains the key and the start time
+    # A: num_sequence instead of passing num_processes
     return processes, sequence
 
 def np_ps(processes, num_processes):
@@ -182,7 +183,46 @@ def np_ps(processes, num_processes):
         time = end
 
     processes.sort(key = lambda p: p['waiting_time'])
-    return processes, 'sequence'
+    return processes, ' '
+
+def p_ps(processes, num_processes):
+    processes.sort(key = lambda p: p['arrival_time'])
+    for p in processes:
+        p['remaining_time'] = p['burst_time']
+
+    ready_queue = [processes[0]]
+    curr = 0
+    next = 1
+    time = processes[0]['arrival_time']
+    sequence = []
+
+    while next < num_processes: 
+        ready_queue[curr]['remaining_time'] -= processes[next]['arrival_time'] - time
+        rt = ready_queue[curr]['remaining_time']
+        sequence.append({ 'key': ready_queue[curr]['key'], 'start_time': time,  'burst_time': ready_queue[curr]['burst_time'] })
+        if(rt <= 0):
+            if(rt < 0):
+                time += ready_queue[curr]['remaining_time'] * -1
+
+            ready_queue[curr]['waiting_time'] = ready_queue[curr]['remaining_time'] = 0
+            ready_queue.remove(ready_queue[curr])
+        
+        if(rt >= 0):
+            ready_queue.append(processes[next])
+            time = processes[next]['arrival_time']
+            next += 1
+
+        curr = ready_queue.index(  min(ready_queue, key = lambda p: p['priority']) )
+
+    ready_queue.sort(key = lambda p: p['priority'])
+    for p in ready_queue:
+        p['completion_time'] = time + p['remaining_time']
+        p['waiting_time'] = time - p['arrival_time'] - p['burst_time']
+        sequence.append({ 'key': p['key'], 'start_time': time,  'burst_time': p['burst_time']})
+        time = p['completion_time']
+
+
+    return processes, sequence
 
 def find_total_waiting_time(processes):
     return(sum( p['waiting_time'] for p in processes ))
@@ -225,23 +265,19 @@ def main():
                         
                         elif(choice == 5):
                             p_and_seq = np_ps(processes, num_processes)
+                        elif(choice == 6):
+                            p_and_seq = p_ps(processes, num_processes)
                 
                         total_wt = find_total_waiting_time(p_and_seq[0])
                         avg_wt = find_avg_waiting_time(total_wt, num_processes)
 
                         # for chart, use p_and_seq[0] for nonpreemptive, p_and_seq[1] for preemptive
-                        # options:
-                        # option 1: add condition here to determine which to pass 
-                        # option 2: pass p_and_seq and add condition in function to use p_and_seq[0] if p_and_seq[1] == ''
-                        # print_chart_np(choice, processes, num_processes)
-                        if(choice<3):
-                            print_chart(p_and_seq[0], num_processes)
-                        elif(choice == 5):
+                        if(p_and_seq[1] == ' '):
                             print_chart(p_and_seq[0], num_processes)
                         else:
                             num_sequence = len(p_and_seq[1])
                             print_chart(p_and_seq[1], num_sequence)
-                            #print(p_and_seq[1])
+
                         print_tabular(p_and_seq[0], total_wt, avg_wt)
                     except ValueError:
                         print(f"{Color.RED} \n Invalid input. Arrival time must be a number.")
