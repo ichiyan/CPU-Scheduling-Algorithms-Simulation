@@ -1,4 +1,5 @@
 class Color():
+    BLACK = '\033[30m'
     RED = '\033[31m'
     GREEN = '\033[32m'
     YELLOW = '\033[33m'
@@ -6,7 +7,6 @@ class Color():
     MAGENTA = '\033[35m'
     CYAN = '\033[36m'
     WHITE = '\033[37m'
-    BLACK = '\033[30m'
     
 def print_menu():
     print("\n", 30 * f"{Color.GREEN}-", f"{Color.GREEN}MENU", 30 * f"{Color.GREEN}-")
@@ -88,12 +88,19 @@ def fcfs(processes, num_processes):
     processes.sort(key = lambda p: p['arrival_time'])
     processes[0]['waiting_time'] = 0
     time = processes[0]['start_time'] = processes[0]['arrival_time']
-    for i in range(1, num_processes):
-        processes[i]['waiting_time'] = processes[i - 1]['burst_time'] + processes[i - 1]['waiting_time'] - (processes[i]['arrival_time'] - processes[i-1]['arrival_time'])
-        time += processes[i - 1]['burst_time']
-        processes[i]['start_time'] = time
+    sequence = [{ 'key': processes[0]['key'], 'start_time': time, 'burst_time': processes[0]['burst_time'] }]
 
-    return processes, ''
+    for i in range(1, num_processes):
+        time += processes[i - 1]['burst_time']
+        if(processes[i]['arrival_time'] > time):
+            idle_time = processes[i]['arrival_time'] - time
+            sequence.append({ 'key': '-', 'start_time': time, 'burst_time': idle_time })
+            time += idle_time
+
+        processes[i]['waiting_time'] = time - processes[i]['arrival_time']
+        sequence.append({ 'key': processes[i]['key'], 'start_time': time, 'burst_time': processes[i]['burst_time'] })
+
+    return processes, sequence
 
 
 def np_sjf(processes, num_processes):
@@ -164,21 +171,19 @@ def rr(processes, num_processes, time_slice):
         p['remaining_time'] = p['burst_time']
         p['time_executing'] = 0
 
-    not_arrived = processes.copy()
-    not_arrived.pop(0)
+    not_arrived = processes[1:].copy()
     ready_queue = [processes[0]]
     time = processes[0]['arrival_time']
     sequence = []
     completed =  0
 
     while(completed < num_processes):
-        init_time = time
         if not ready_queue:
             ready_queue.append(not_arrived[0])
             not_arrived.pop(0)
-            NP_time = ready_queue[0]['arrival_time'] - init_time
-            sequence.append({'key': '-', 'start_time': init_time, 'burst_time': NP_time })  
-            time += NP_time
+            idle_time = ready_queue[0]['arrival_time'] - time
+            sequence.append({'key': '-', 'start_time': time, 'burst_time': idle_time })  
+            time += idle_time
 
         sequence.append({'key': ready_queue[0]['key'], 'start_time': time, 'burst_time': ready_queue[0]['remaining_time'] })  
         ready_queue[0]['remaining_time'] -= time_slice
@@ -198,7 +203,7 @@ def rr(processes, num_processes, time_slice):
 
         arrived_ctr = 0
         for pna in not_arrived:
-            if pna['arrival_time'] in range (init_time, time + 1):
+            if pna['arrival_time'] <= time:
                 ready_queue.append(pna)
                 arrived_ctr += 1
         del not_arrived[:arrived_ctr]
@@ -288,12 +293,12 @@ def main():
                         total_wt = find_total_waiting_time(p_and_seq[0])
                         avg_wt = find_avg_waiting_time(total_wt, num_processes)
 
-                        if(choice<3 or choice == 5):
-                            print_chart(p_and_seq[0], num_processes)
-                        else:
-                            num_sequence = len(p_and_seq[1])
-                            print_chart(p_and_seq[1], num_sequence)
-                            #print(p_and_seq[1])
+                        # if(choice<3 or choice == 5):
+                        #     print_chart(p_and_seq[0], num_processes)
+                        # else:
+                        #     num_sequence = len(p_and_seq[1])
+                        #     print_chart(p_and_seq[1], num_sequence)
+                        #     #print(p_and_seq[1])
                         print_tabular(p_and_seq[0], total_wt, avg_wt)
                     except ValueError:
                          print(f"{Color.RED} \n Invalid choice. Choice must be from 1-7.")
