@@ -59,7 +59,7 @@ def print_chart(processes, num_processes):
     #print(processes[num_processes-1])
 
 def print_tabular(processes, total_wt, avg_wt):
-    processes.sort(key = lambda p: p['key'])  
+    processes.sort(key = lambda p: p['arrival_time'])  
     if(processes[0]['priority'] == -1):
         print("\n {:^15} {:^20} {:^20} {:^20}".format(f"{Color.YELLOW} Process", f"{Color.YELLOW} Arrival Time", f"{Color.YELLOW} Burst Time", f"{Color.YELLOW} Waiting Time"))
     else:
@@ -156,30 +156,7 @@ def p_sjf(processes, num_processes):
         sequence.append({ 'key': p['key'], 'start_time': time,  'burst_time': p['burst_time']})
         time = p['completion_time']
 
-    # how do you want to solve for/display the completion time of the last process? 
-    # for now, sequence just contains the key and the start time
     return processes, sequence
-
-def np_ps(processes, num_processes):
-    processes.sort(key = lambda p: p['arrival_time'])
-    
-    time = processes[0]['start_time'] = processes[0]['arrival_time']
-    processes[0]['waiting_time'] = 0
-    ready_queue = []
-    completed = 1
-    prev = 0
-    while completed < num_processes:
-        end = time + processes[prev]['burst_time']
-        for p in processes:
-            if(p['arrival_time'] in range(time + 1, end + 1)):
-                ready_queue.append(p)
-        curr_process = min(ready_queue, key = lambda p: p['priority'])
-        curr_process['start_time'] = end
-        curr_process['waiting_time'] = end - curr_process['arrival_time']
-        completed += 1
-        ready_queue.remove(curr_process)
-        prev = processes.index(curr_process)
-        time = end
 
 def rr(processes, num_processes, time_slice):
     processes.sort(key = lambda p: p['arrival_time'])
@@ -200,7 +177,7 @@ def rr(processes, num_processes, time_slice):
             ready_queue.append(not_arrived[0])
             not_arrived.pop(0)
             NP_time = ready_queue[0]['arrival_time'] - init_time
-            sequence.append({'key': 'NP', 'start_time': init_time, 'burst_time': NP_time })  
+            sequence.append({'key': '-', 'start_time': init_time, 'burst_time': NP_time })  
             time += NP_time
 
         sequence.append({'key': ready_queue[0]['key'], 'start_time': time, 'burst_time': ready_queue[0]['remaining_time'] })  
@@ -234,6 +211,31 @@ def rr(processes, num_processes, time_slice):
         pr['waiting_time'] = pr['last_start_time'] - pr['time_executing'] - pr['arrival_time']
 
     return processes, sequence
+
+def np_ps(processes, num_processes):
+    processes.sort(key = lambda p: p['arrival_time'])
+    
+    time = processes[0]['start_time'] = processes[0]['arrival_time']
+    processes[0]['waiting_time'] = 0
+    ready_queue = []
+    completed = 1
+    prev = 0
+    while completed < num_processes:
+        end = time + processes[prev]['burst_time']
+        for p in processes:
+            if(p['arrival_time'] in range(time + 1, end + 1)):
+                ready_queue.append(p)
+        curr_process = min(ready_queue, key = lambda p: p['priority'])
+        curr_process['start_time'] = end
+        curr_process['waiting_time'] = end - curr_process['arrival_time']
+        completed += 1
+        ready_queue.remove(curr_process)
+        prev = processes.index(curr_process)
+        time = end
+
+    processes.sort(key = lambda p: p['waiting_time'])
+    return processes, ''
+
 
 def find_total_waiting_time(processes):
     return(sum( p['waiting_time'] for p in processes ))
@@ -280,22 +282,13 @@ def main():
                                 p_and_seq = rr(processes, num_processes, time_slice)
                             except ValueError:
                                 print(f"{Color.RED} \n Invalid input. Time quantum must be a number.")
-
-                        
                         elif(choice == 5):
                             p_and_seq = np_ps(processes, num_processes)
                 
                         total_wt = find_total_waiting_time(p_and_seq[0])
                         avg_wt = find_avg_waiting_time(total_wt, num_processes)
 
-                        # for chart, use p_and_seq[0] for nonpreemptive, p_and_seq[1] for preemptive
-                        # options:
-                        # option 1: add condition here to determine which to pass 
-                        # option 2: pass p_and_seq and add condition in function to use p_and_seq[0] if p_and_seq[1] == ''
-                        # print_chart_np(choice, processes, num_processes)
-                        if(choice<3):
-                            print_chart(p_and_seq[0], num_processes)
-                        elif(choice == 5):
+                        if(choice<3 or choice == 5):
                             print_chart(p_and_seq[0], num_processes)
                         else:
                             num_sequence = len(p_and_seq[1])
