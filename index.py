@@ -102,6 +102,7 @@ def fcfs(processes, num_processes):
 
 
 def np_sjf(processes, num_processes):
+    # add condition to skip these if num processes = 1
     processes.sort(key = lambda p: p['arrival_time'])
     second_arrival = next( (pr for pr in processes if pr['arrival_time'] != processes[0]['arrival_time']), -1)
     sj = min( processes[: processes.index(second_arrival) if second_arrival != -1 else num_processes ], key = lambda pro: pro['burst_time'])
@@ -140,42 +141,96 @@ def np_sjf(processes, num_processes):
 
 
 def p_sjf(processes, num_processes):
-    processes.sort(key = lambda p: p['arrival_time'])
-    for p in processes:
-        p['remaining_time'] = p['burst_time']
+    if num_processes == 1:
+        time = processes[0]['arrival_time']
+        sequence = [{ 'key': processes[0]['key'], 'start_time': time, 'burst_time': processes[0]['burst_time'] }]
+        processes[0]['waiting_time'] = 0
+    else:
+        processes.sort(key = lambda p: p['arrival_time'])
+        ready_queue = []
+        not_arrived = []
+        sequence = [{ 'key': -1 }]
+        time = processes[0]['arrival_time']
+        for pr in processes:
+            pr['remaining_time'] = pr['burst_time']
+            pr['time_executing']  = 0
+            pr['last_burst'] = 0
+            if pr['arrival_time'] == time:
+                ready_queue.append(pr)
+            else:
+                not_arrived.append(pr)
+        has_not_arrived = True if not_arrived else False
 
-    ready_queue = [processes[0]]
-    curr = 0
-    next = 1
-    time = processes[0]['arrival_time']
-    sequence = []
+        while not_arrived: 
+            pcurr = min( ready_queue, key = lambda job: job['burst_time'] )
+            end = time + pcurr['remaining_time']
+            newly_arrived_ctr = 0
+            for pna in not_arrived:
+                if pna['arrival_time'] in range(time, end + 1):
+                    ready_queue.append(pna)
+                    newly_arrived_ctr += 1
+                    elapsed = pna['arrival_time'] - time
+                    pcurr['remaining_time'] -= elapsed
+                    bt = pcurr['burst_time'] - pcurr['remaining_time']
+                    pcurr['time_executing'] += bt
+                    if sequence[-1]['key'] != pcurr['key']: 
+                        pcurr['last_start_time'] = time
+                        pcurr['last_burst'] = bt
+                    else:
+                        pcurr['last_burst'] += bt
+                    sequence.append({ 'key': pcurr['key'], 'start_time': time, 'burst_time': bt, 'p_ndx': processes.index(pcurr) } )
+                    print(f"\n T1: {sequence[-1]}")
+                    time += elapsed
+                    if( pna['remaining_time'] < pcurr['remaining_time'] ):
+                        pcurr = pna
+                        end = time + pcurr['remaining_time']
+                        bt = pcurr['burst_time'] - pcurr['remaining_time']
+                        pcurr['time_executing'] += bt
+                        if sequence[-1]['key'] != pcurr['key']:
+                            pcurr['last_start_time'] = time
+                        sequence.append({ 'key': pcurr['key'], 'start_time': time, 'burst_time': bt, 'p_ndx': processes.index(pcurr) } )
+                        print(f"\n T2: {sequence[-1]}")
+                else:
+                    break
+            del not_arrived[:newly_arrived_ctr]
 
-    while next < num_processes: 
-        ready_queue[curr]['remaining_time'] -= processes[next]['arrival_time'] - time
-        rt = ready_queue[curr]['remaining_time']
-        sequence.append({ 'key': ready_queue[curr]['key'], 'start_time': time,  'burst_time': ready_queue[curr]['burst_time'] })
-        if(rt <= 0):
-            if(rt < 0):
-                time += rt * -1
+            print(f"\n PCURR: {pcurr}")
+            if "last_start_time" in pcurr:
+                pcurr['time_executing'] -= pcurr['last_burst']
+            else:
+                pcurr['last_start_time'] = time
+            ready_queue.remove(pcurr)
+            time = end
 
-            ready_queue[curr]['waiting_time'] = ready_queue[curr]['remaining_time'] = 0
-            ready_queue.remove(ready_queue[curr])
-        
-        if(rt >= 0):
-            ready_queue.append(processes[next])
-            time = processes[next]['arrival_time']
-            next += 1
+        ready_queue.sort(key = lambda job: job['burst_time'])
+        sequence.pop(0)
+        if has_not_arrived:
+            bt = sequence[-1]['burst_time'] =  time - sequence[-1]['start_time']
+        for p in ready_queue:
+            p['last_start_time'] = start_time = time
+            time += p['remaining_time']
+            bt = time - start_time
+            sequence.append({ 'key': p['key'], 'start_time': start_time, 'burst_time': bt } )
 
-        curr = ready_queue.index(  min(ready_queue, key = lambda p: p['remaining_time']) )
+        for p in processes:
+            p['waiting_time'] = p['last_start_time'] - p['time_executing'] - p['arrival_time']
 
-    ready_queue.sort(key = lambda p: p['remaining_time'])
-    for p in ready_queue:
-        p['completion_time'] = time + p['remaining_time']
-        p['waiting_time'] = p['completion_time'] - p['arrival_time'] - p['burst_time']
-        sequence.append({ 'key': p['key'], 'start_time': time,  'burst_time': p['burst_time']})
-        time = p['completion_time']
+    print(f"\n SEQUENCE")
+    for x in sequence:
+        print(x)
+
+    
+    print(f"\n PROCESSES")
+    for x in processes:
+        print(x)
 
     return processes, sequence
+
+
+
+
+
+   
 
 def rr(processes, num_processes, time_slice):
     processes.sort(key = lambda p: p['arrival_time'])
@@ -344,7 +399,7 @@ def main():
         try:
             choice = int(choice)
             if(choice == 7):
-                print(f"{Color.RED} \n TERMINATING PROGRAM")
+                print(f"{Color.RED} \n TERMINATING PROGRAM...")
                 loop = False
             elif(choice not in range(1, 8)):
                 print(f"{Color.RED} \n Invalid choice. Choice must be from 1-7.")
@@ -376,7 +431,7 @@ def main():
                                 time_slice = int(time_slice)
                                 p_and_seq = rr(processes, num_processes, time_slice)
                             except ValueError:
-                                print(f"{Color.RED} \n Invalid input. Time quantum must be a number.")
+                                print(f"{Color.RED} \n Invalid input. Time slice or quantum must be a number.")
                         elif(choice == 5):
                             p_and_seq = np_ps(processes, num_processes)
                         elif(choice == 6):
@@ -386,11 +441,11 @@ def main():
                         avg_wt = find_avg_waiting_time(total_wt, num_processes)
 
                         # for chart, use p_and_seq[0] for nonpreemptive, p_and_seq[1] for preemptive
-                        if(p_and_seq[1] == ' '):
-                            print_chart(p_and_seq[0], num_processes)
-                        else:
-                            num_sequence = len(p_and_seq[1])
-                            print_chart(p_and_seq[1], num_sequence)
+                        # if(p_and_seq[1] == ' '):
+                        #     print_chart(p_and_seq[0], num_processes)
+                        # else:
+                        #     num_sequence = len(p_and_seq[1])
+                        #     print_chart(p_and_seq[1], num_sequence)
 
                         print_tabular(p_and_seq[0], total_wt, avg_wt)
                     except ValueError:
