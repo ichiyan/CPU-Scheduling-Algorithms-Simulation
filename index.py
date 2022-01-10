@@ -452,14 +452,22 @@ def main():
                 print(f"{Color.RED} \n Invalid choice. Choice must be from 1-7.")
             else:
                 try: 
-                    # add condition: burst time must not be == 0
                     burst_times = [ int(time) for time in input(f"Enter {Color.YELLOW} burst times {Color.WHITE} in milliseconds separated by space (e.g., 24 3 3): ").split()]
                     try:
+                        if 0 in burst_times:
+                            print(f"{Color.RED} \n Burst time must not be equal to 0.")
+                            continue
                         arrival_times = [ int(time) for time in input(f"Enter {Color.YELLOW} arrival times {Color.WHITE} in milliseconds separated by space (e.g, 0 1 2): ").split()]
                         num_processes = len(burst_times)
+                        if len(arrival_times) != num_processes:
+                            print(f"{Color.RED} \n Number of burst and arrival times must be the same.")
+                            continue
                         if(choice > 4): #additional input needed for Priority Scheduling
                             try:
                                 priority = [ int(time) for time in input(f"Enter order of {Color.YELLOW} priority {Color.WHITE} (the lower the number, the higher the priority), separated by space (e.g, 0 1 2): ").split()]
+                                if len(priority) != num_processes:
+                                    print(f"{Color.RED} \n Number of burst times, arrival times, and priority orders must be the same.")
+                                    continue
                             except ValueError:
                                 print(f"{Color.RED} \n Invalid input. Priority must be a number.")
                             processes = make_process_list(burst_times, arrival_times, priority)
@@ -492,6 +500,7 @@ def main():
                         print(f"\n {Color.YELLOW} GANTT CHART:")
                         print_chart(p_and_seq[1], len(p_and_seq[1]))
                         print_tabular(p_and_seq[0], total_wt, avg_wt)
+                        
                     except ValueError:
                          print(f"{Color.RED} \n Invalid input. Arrival time must be a number.")
 
