@@ -8,79 +8,6 @@ class Color():
     CYAN = '\033[36m'
     WHITE = '\033[37m'
     
-def print_menu():
-    print("\n", 30 * f"{Color.GREEN}-", f"{Color.GREEN}MENU", 30 * f"{Color.GREEN}-")
-    print(f""" 
-        1. First-Come, First-Served Scheduling 
-        2. Nonpreemptive Shortest-Job-First Scheduling
-        3. Preemptive Shortest-Job-First Scheduling
-        4. Round-Robin Scheduling
-        5. Nonpreemptive Priority Scheduling
-        6. Preemptive Priority Scheduling 
-        7. Exit
-    """)
-    print(67 * f"{Color.GREEN}-")
-
-
-def print_chart(processes, num_processes):
-    total_burst = float(sum( p['burst_time'] for p in processes ))
-    print("\n", 100 * f"{Color.CYAN}-")
-    for ndx, p in enumerate(processes):
-        space = int(float(p['burst_time']) / total_burst * 100.0 / 2)
-        if(p['key'] == processes[ndx-1]['key']): #if current is same as previous
-            print(space * f"{Color.WHITE}.", end ="")
-        else:
-            if(p['burst_time']>9 or p['key']==1):
-                print(f"{Color.CYAN}|", f"{Color.WHITE} P{p['key']}", space * f"{Color.WHITE}.", end ="")
-            else:
-                print(f"{Color.CYAN} |", f"{Color.WHITE} P{p['key']}", space * f"{Color.WHITE}.", end ="")
-
-        #x print(*(["|", "P{data}:{sizeN}".format(data=p['key'], sizeN=4), space * f"{Color.WHITE}."]), end =" ")
-        #print(" {:2}{:4}{:space} ".format(f"{Color.CYAN}|", f"{Color.WHITE} P{p['key']}", space * f"{Color.WHITE}."), end =" ")
-    print(f"{Color.CYAN}      |")
-    print("\n",100 * f"{Color.CYAN}-")
-    for i, p in enumerate(processes):
-        space = int(float(p['burst_time']) / total_burst * 100.0 / 2)
-        if(p['burst_time']>9):
-            if(p['key'] == processes[i-1]['key']): #if current is same as previous
-                print( space * f"{Color.WHITE}.", end ="")
-            else:
-                print( f"{Color.CYAN}|", f"{Color.WHITE} {p['start_time']}", space * f"{Color.WHITE}.", end ="")
-        else: #has extra space at the end for better alignment
-            if(p['key'] == processes[i-1]['key']): #if current is same as previous
-                print(space * f"{Color.WHITE}.", end ="")
-            else:
-                print( f"{Color.CYAN}  |", f"{Color.WHITE} {p['start_time']}", space * f"{Color.WHITE}.", end ="")
-
-    print(f"{Color.WHITE} {processes[num_processes-1]['start_time'] + processes[num_processes-1]['burst_time']}", f"{Color.CYAN}| ")
-    print(100 * f"{Color.CYAN}-")
-    #print(processes[num_processes-1])
-
-def print_tabular(processes, total_wt, avg_wt):
-    processes.sort(key = lambda p: p['arrival_time'])  
-    if(processes[0]['priority'] == -1):
-        print("\n {:^15} {:^20} {:^20} {:^20}".format(f"{Color.YELLOW} Process", f"{Color.YELLOW} Arrival Time", f"{Color.YELLOW} Burst Time", f"{Color.YELLOW} Waiting Time"))
-    else:
-        print("\n {:^15} {:^20} {:^20} {:^20} {:^20}".format(f"{Color.YELLOW} Process", f"{Color.YELLOW} Arrival Time", f"{Color.YELLOW} Burst Time", f"{Color.YELLOW} Waiting Time", f"{Color.YELLOW} Priority"))
-    for p in processes:
-            if(p['priority'] == -1):
-                print("\n {:^15} {:^20} {:^20} {:^20}".format(f"{Color.WHITE} P{p['key']}", f"{Color.WHITE} {p['arrival_time']}", f"{Color.WHITE} {p['burst_time']}", f"{Color.WHITE} {p['waiting_time']}"))
-            else:
-                print("\n {:^15} {:^20} {:^20} {:^20} {:^20}".format(f"{Color.WHITE} P{p['key']}", f"{Color.WHITE} {p['arrival_time']}", f"{Color.WHITE} {p['burst_time']}", f"{Color.WHITE} {p['waiting_time']}", f"{Color.WHITE} {p['priority']}"))
-    print(f"\n {Color.YELLOW} Total Waiting Time: {Color.WHITE} {total_wt}")
-    print(f" {Color.YELLOW} Average Waiting Time: {Color.WHITE} {avg_wt}")
-
-
-def make_process_list(burst_times, arrival_times, priority):
-    processes = []
-    for i, p in enumerate(burst_times):
-        if(priority == -1):
-            processes.append({'key': i+1, 'arrival_time': arrival_times[i], 'burst_time': p, 'priority':-1})
-        else:
-            processes.append({'key': i+1, 'arrival_time': arrival_times[i], 'burst_time': p, 'priority':priority[i]})
-
-    return processes
-
 
 def fcfs(processes, num_processes):
     processes.sort(key = lambda p: p['arrival_time'])
@@ -415,6 +342,84 @@ def find_avg_waiting_time(total_waiting_time, num_processes):
     return total_waiting_time/num_processes
 
 
+def print_menu():
+    print("\n", 30 * f"{Color.GREEN}-", f"{Color.GREEN}MENU", 30 * f"{Color.GREEN}-")
+    print(f""" 
+        1. First-Come, First-Served Scheduling 
+        2. Nonpreemptive Shortest-Job-First Scheduling
+        3. Preemptive Shortest-Job-First Scheduling
+        4. Round-Robin Scheduling
+        5. Nonpreemptive Priority Scheduling
+        6. Preemptive Priority Scheduling 
+        7. Exit
+    """)
+    print(67 * f"{Color.GREEN}-")
+
+
+def print_chart(processes, num_processes):
+    total_burst = float(sum( p['burst_time'] for p in processes ))
+    print("\n", 100 * f"{Color.CYAN}-")
+    for ndx, p in enumerate(processes):
+        space = int(float(p['burst_time']) / total_burst * 100.0 / 2)
+        if(p['key'] == processes[ndx-1]['key']): #if current is same as previous
+            print(space * f"{Color.WHITE}.", end ="")
+        else:
+            if(p['burst_time']>9 or p['key']==1):
+                print(f"{Color.CYAN}|", f"{Color.WHITE} P{p['key']}", space * f"{Color.WHITE}.", end ="")
+            else:
+                print(f"{Color.CYAN} |", f"{Color.WHITE} P{p['key']}", space * f"{Color.WHITE}.", end ="")
+
+        #x print(*(["|", "P{data}:{sizeN}".format(data=p['key'], sizeN=4), space * f"{Color.WHITE}."]), end =" ")
+        #print(" {:2}{:4}{:space} ".format(f"{Color.CYAN}|", f"{Color.WHITE} P{p['key']}", space * f"{Color.WHITE}."), end =" ")
+    print(f"{Color.CYAN}      |")
+    print("\n",100 * f"{Color.CYAN}-")
+    for i, p in enumerate(processes):
+        space = int(float(p['burst_time']) / total_burst * 100.0 / 2)
+        if(p['burst_time']>9):
+            if(p['key'] == processes[i-1]['key']): #if current is same as previous
+                print( space * f"{Color.WHITE}.", end ="")
+            else:
+                print( f"{Color.CYAN}|", f"{Color.WHITE} {p['start_time']}", space * f"{Color.WHITE}.", end ="")
+        else: #has extra space at the end for better alignment
+            if(p['key'] == processes[i-1]['key']): #if current is same as previous
+                print(space * f"{Color.WHITE}.", end ="")
+            else:
+                print( f"{Color.CYAN}  |", f"{Color.WHITE} {p['start_time']}", space * f"{Color.WHITE}.", end ="")
+
+    print(f"{Color.WHITE} {processes[num_processes-1]['start_time'] + processes[num_processes-1]['burst_time']}", f"{Color.CYAN}| ")
+    print(100 * f"{Color.CYAN}-")
+    #print(processes[num_processes-1])
+
+def print_tabular(processes, total_wt, avg_wt):
+    processes.sort(key = lambda p: p['arrival_time'])  
+    if(processes[0]['priority'] == -1):
+        print("\n {:^15} {:^20} {:^20} {:^20}".format(f"{Color.YELLOW} Process", f"{Color.YELLOW} Arrival Time", f"{Color.YELLOW} Burst Time", f"{Color.YELLOW} Waiting Time"))
+    else:
+        print("\n {:^15} {:^20} {:^20} {:^20} {:^20}".format(f"{Color.YELLOW} Process ID", f"{Color.YELLOW} Arrival Time", f"{Color.YELLOW} Burst Time", f"{Color.YELLOW} Waiting Time", f"{Color.YELLOW} Priority"))
+    for p in processes:
+            if(p['priority'] == -1):
+                print("\n {:^15} {:^20} {:^20} {:^20}".format(f"{Color.WHITE} P{p['key']}", f"{Color.WHITE} {p['arrival_time']}", f"{Color.WHITE} {p['burst_time']}", f"{Color.WHITE} {p['waiting_time']}"))
+            else:
+                print("\n {:^15} {:^20} {:^20} {:^20} {:^20}".format(f"{Color.WHITE} P{p['key']}", f"{Color.WHITE} {p['arrival_time']}", f"{Color.WHITE} {p['burst_time']}", f"{Color.WHITE} {p['waiting_time']}", f"{Color.WHITE} {p['priority']}"))
+    print(f"\n {Color.YELLOW} Total Waiting Time: {Color.WHITE} {total_wt}")
+    print(f" {Color.YELLOW} Average Waiting Time: {Color.WHITE} {avg_wt}")
+
+def print_sequence(sequence):
+    print("\n {:^15} {:^20} {:^20} ".format(f"{Color.YELLOW} Process ID", f"{Color.YELLOW} Start Time", f"{Color.YELLOW} Duration"))
+    for s in sequence:
+        print("\n {:^15} {:^20} {:^20}".format(f"{Color.WHITE} {'P' if s['key'] != '-' else ''}{s['key']}", f"{Color.WHITE} {s['start_time']}", f"{Color.WHITE} {s['burst_time']}"))
+
+
+def make_process_list(burst_times, arrival_times, priority):
+    processes = []
+    for i, p in enumerate(burst_times):
+        if(priority == -1):
+            processes.append({'key': i+1, 'arrival_time': arrival_times[i], 'burst_time': p, 'priority':-1})
+        else:
+            processes.append({'key': i+1, 'arrival_time': arrival_times[i], 'burst_time': p, 'priority':priority[i]})
+
+    return processes
+
 def main():
     loop = True
     while loop:
@@ -430,13 +435,13 @@ def main():
             else:
                 try: 
                     # add condition: burst time must not be == 0
-                    burst_times = [ int(time) for time in input(f"Enter burst times in milliseconds separated by space (e.g., 24 3 3): ").split()]
+                    burst_times = [ int(time) for time in input(f"Enter {Color.YELLOW} burst times {Color.WHITE} in milliseconds separated by space (e.g., 24 3 3): ").split()]
                     try:
-                        arrival_times = [ int(time) for time in input(f"Enter arrival times in milliseconds separated by space (e.g, 0 1 2): ").split()]
+                        arrival_times = [ int(time) for time in input(f"Enter {Color.YELLOW} arrival times {Color.WHITE} in milliseconds separated by space (e.g, 0 1 2): ").split()]
                         num_processes = len(burst_times)
                         if(choice > 4): #additional input needed for Priority Scheduling
                             try:
-                                priority = [ int(time) for time in input(f"Enter order of priority, separated by space (e.g, 0 1 2): ").split()]
+                                priority = [ int(time) for time in input(f"Enter order of {Color.YELLOW} priority {Color.WHITE} (the lower the number, the higher the priority), separated by space (e.g, 0 1 2): ").split()]
                             except ValueError:
                                 print(f"{Color.RED} \n Invalid input. Priority must be a number.")
                             processes = make_process_list(burst_times, arrival_times, priority)
@@ -450,7 +455,7 @@ def main():
                         elif(choice == 3):
                             p_and_seq = p_sjf(processes, num_processes)
                         elif(choice == 4):
-                            time_slice = input("Enter time slice in milliseconds: ")
+                            time_slice = input(f"Enter {Color.YELLOW} time slice {Color.WHITE} in milliseconds: ")
                             try:
                                 time_slice = int(time_slice)
                                 p_and_seq = rr(processes, num_processes, time_slice)
@@ -464,13 +469,10 @@ def main():
                         total_wt = find_total_waiting_time(p_and_seq[0])
                         avg_wt = find_avg_waiting_time(total_wt, num_processes)
 
-                        # for chart, use p_and_seq[0] for nonpreemptive, p_and_seq[1] for preemptive
-                        # if(p_and_seq[1] == ' '):
-                        #     print_chart(p_and_seq[0], num_processes)
-                        # else:
-                        #     num_sequence = len(p_and_seq[1])
-                        #     print_chart(p_and_seq[1], num_sequence)
-
+                        print(f"\n {Color.YELLOW} SEQUENCE: ")
+                        print_sequence(p_and_seq[1])
+                        print(f"\n {Color.YELLOW} GANTT CHART:")
+                        print_chart(p_and_seq[1], len(p_and_seq[1]))
                         print_tabular(p_and_seq[0], total_wt, avg_wt)
                     except ValueError:
                          print(f"{Color.RED} \n Invalid input. Arrival time must be a number.")
