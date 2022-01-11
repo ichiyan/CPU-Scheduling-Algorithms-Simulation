@@ -94,6 +94,7 @@ def p_sjf(processes, num_processes):
         sequence = [{ 'key': -1 }]
         time = processes[0]['arrival_time']
         # time_executing: total time the process is executed minus its last burst
+        # last_burst: duration of last burst
         for pr in processes:
             pr['remaining_time'] = pr['burst_time']
             pr['time_executing']  = 0
@@ -141,12 +142,14 @@ def p_sjf(processes, num_processes):
             if "last_start_time" in pcurr:
                 pcurr['time_executing'] -= pcurr['last_burst']
             else:
+                # last process that is executed before all processes have arrived
                 pcurr['last_start_time'] = time
                 sequence.append({ 'key': pcurr['key'], 'start_time': time, 'burst_time': pcurr['remaining_time'] - time } )
 
             ready_queue.remove(pcurr)
             time = end
 
+            # processor is idle
             if not ready_queue:
                 time = not_arrived[0]['arrival_time']
                 next_arrivals = []
@@ -158,7 +161,8 @@ def p_sjf(processes, num_processes):
                 ready_queue.append( min(next_arrivals, key = lambda job: job['burst_time']) )
                 not_arrived.pop(0)
                 sequence.append({ 'key': '-', 'start_time': end, 'burst_time': time - end } )
-              
+
+        # once all processes have arrived, perform np_sjf to the remaining processes  
         ready_queue.sort(key = lambda job: job['burst_time'])
         sequence.pop(0)
         if has_not_arrived:
@@ -282,6 +286,11 @@ def p_ps(processes, num_processes):
     # code is the same as in p_sjf only that 
     # the priority is used in selecting the process
     # to be executed instead of the burst time
+
+    # current code is plain preemptive priority scheduling;
+    # it does not implement priority aging nor a combination
+    # of round robin scheduling to prevent starvation 
+
     if num_processes == 1:
         time = processes[0]['arrival_time']
         sequence = [{ 'key': processes[0]['key'], 'start_time': time, 'burst_time': processes[0]['burst_time'] }]
@@ -343,7 +352,6 @@ def p_ps(processes, num_processes):
             else:
                 pcurr['last_start_time'] = time
                 sequence.append({ 'key': pcurr['key'], 'start_time': time, 'burst_time': pcurr['remaining_time'] - time } )
-
             ready_queue.remove(pcurr)
             time = end
 
@@ -358,9 +366,10 @@ def p_ps(processes, num_processes):
                 ready_queue.append( min(next_arrivals, key = lambda job: job['priority']) )
                 not_arrived.pop(0)
                 sequence.append({ 'key': '-', 'start_time': end, 'burst_time': time - end } )
-              
+
         ready_queue.sort(key = lambda job: job['priority'])
         sequence.pop(0)
+
         if has_not_arrived:
             bt = sequence[-1]['burst_time'] =  time - sequence[-1]['start_time']
         for p in ready_queue:
@@ -368,7 +377,6 @@ def p_ps(processes, num_processes):
             time += p['remaining_time']
             bt = time - start_time
             sequence.append({ 'key': p['key'], 'start_time': start_time, 'burst_time': bt } )
-
         for p in processes:
             p['waiting_time'] = p['last_start_time'] - p['time_executing'] - p['arrival_time']
 
@@ -392,6 +400,7 @@ def print_menu():
         4. Round-Robin Scheduling
         5. Nonpreemptive Priority Scheduling
         6. Preemptive Priority Scheduling 
+          (plain PP; aging and round robin not implemented)
         7. Exit
     """)
     print(67 * f"{Color.GREEN}-")
@@ -403,26 +412,26 @@ def print_chart(processes, num_processes):
     for ndx, p in enumerate(processes):
         space = int(float(p['burst_time']) / total_burst * 100.0 / 2)
         if(ndx >=1 and p['key'] == processes[ndx-1]['key']): #if current is same as previous
-            print(space * f"{Color.WHITE}.", end ="")
+            print(space * f"{Color.WHITE} ", end ="")
         else:
             if(p['burst_time']>9 or p['key']==1):
-                print(f"{Color.CYAN}|", f"{Color.WHITE} P{p['key']}", space * f"{Color.WHITE}.", end ="")
+                print(f"{Color.CYAN}|", f"{Color.WHITE} P{p['key']}", space * f"{Color.WHITE} ", end ="")
             else:
-                print(f"{Color.CYAN} |", f"{Color.WHITE} P{p['key']}", space * f"{Color.WHITE}.", end ="")
+                print(f"{Color.CYAN} |", f"{Color.WHITE} P{p['key']}", space * f"{Color.WHITE} ", end ="")
     print(f"{Color.CYAN}      |")
     print("\n",100 * f"{Color.CYAN}-")
     for i, p in enumerate(processes):
         space = int(float(p['burst_time']) / total_burst * 100.0 / 2)
         if(p['burst_time']>9):
             if(i >=1 and p['key'] == processes[i-1]['key']): #if current is same as previous
-                print( space * f"{Color.WHITE}.", end ="")
+                print( space * f"{Color.WHITE} ", end ="")
             else:
-                print( f"{Color.CYAN}|", f"{Color.WHITE} {p['start_time']}", space * f"{Color.WHITE}.", end ="")
+                print( f"{Color.CYAN}|", f"{Color.WHITE} {p['start_time']}", space * f"{Color.WHITE} ", end ="")
         else: #has extra space at the end for better alignment
             if(i >=1 and p['key'] == processes[i-1]['key']): #if current is same as previous
-                print(space * f"{Color.WHITE}.", end ="")
+                print(space * f"{Color.WHITE} ", end ="")
             else:
-                print( f"{Color.CYAN}  |", f"{Color.WHITE} {p['start_time']}", space * f"{Color.WHITE}.", end ="")
+                print( f"{Color.CYAN}  |", f"{Color.WHITE} {p['start_time']}", space * f"{Color.WHITE} ", end ="")
 
     print(f"{Color.WHITE} {processes[num_processes-1]['start_time'] + processes[num_processes-1]['burst_time']}", f"{Color.CYAN}| ")
     print(100 * f"{Color.CYAN}-")
