@@ -7,7 +7,11 @@ class Color():
     MAGENTA = '\033[35m'
     CYAN = '\033[36m'
     WHITE = '\033[37m'
-    
+
+# The variable ready_queue used throughout the program represents the structure
+# wherein processes are put as they enter the system and as they are ready and
+# and are waiting to execute. However, despite being named as a queue, it does 
+# not necessarily follow the rules of a FIFO queue. 
 
 def fcfs(processes, num_processes):
     processes.sort(key = lambda p: p['arrival_time'])
@@ -17,6 +21,7 @@ def fcfs(processes, num_processes):
 
     for i in range(1, num_processes):
         time += processes[i - 1]['burst_time']
+        # if ready queue is empty ==> processor is idle
         if(processes[i]['arrival_time'] > time):
             idle_time = processes[i]['arrival_time'] - time
             sequence.append({ 'key': '-', 'start_time': time, 'burst_time': idle_time })
@@ -35,7 +40,11 @@ def np_sjf(processes, num_processes):
         processes[0]['waiting_time'] = 0
     else:
         processes.sort(key = lambda p: p['arrival_time'])
+        # second_arrival: the first occurence of a process (sorted by arrival time) 
+        # in which the arrival time is not the same as the process that arrived first
+        # used to determine the processes that arrived first
         second_arrival = next( (pr for pr in processes if pr['arrival_time'] != processes[0]['arrival_time']), -1)
+        # sj: the process with the shortest burst time among the processes that arrived first
         sj = min( processes[: processes.index(second_arrival) if second_arrival != -1 else num_processes ], key = lambda pro: pro['burst_time'])
         time = sj['arrival_time']
         sj_ndx = processes.index(sj)
@@ -65,6 +74,7 @@ def np_sjf(processes, num_processes):
                 bt = processes[prev]['burst_time']
                 sequence.append({ 'key': processes[prev]['key'], 'start_time': time, 'burst_time': processes[prev]['burst_time'] })
             else:
+                # processor is idle
                 bt = not_arrived[0]['arrival_time'] - end
                 sequence.append({ 'key': '-', 'start_time': end, 'burst_time': bt })
 
@@ -80,8 +90,10 @@ def p_sjf(processes, num_processes):
         processes.sort(key = lambda p: p['arrival_time'])
         ready_queue = []
         not_arrived = []
+        # first item used for comparison purposes only
         sequence = [{ 'key': -1 }]
         time = processes[0]['arrival_time']
+        # time_executing: total time the process is executed minus its last burst
         for pr in processes:
             pr['remaining_time'] = pr['burst_time']
             pr['time_executing']  = 0
@@ -96,21 +108,24 @@ def p_sjf(processes, num_processes):
             pcurr = min( ready_queue, key = lambda job: job['burst_time'] )
             end = time + pcurr['remaining_time']
             newly_arrived_ctr = 0
-            for pna in not_arrived:
+            for i, pna in enumerate(not_arrived):
                 if pna['arrival_time'] in range(time, end + 1):
                     ready_queue.append(pna)
                     newly_arrived_ctr += 1
-                    elapsed = pna['arrival_time'] - time
-                    pcurr['remaining_time'] -= elapsed
-                    bt = pcurr['burst_time'] - pcurr['remaining_time']
-                    pcurr['time_executing'] += bt
-                    if sequence[-1]['key'] != pcurr['key']: 
-                        pcurr['last_start_time'] = time
-                        pcurr['last_burst'] = bt
-                    else:
-                        pcurr['last_burst'] += bt
-                    sequence.append({ 'key': pcurr['key'], 'start_time': time, 'burst_time': bt, 'p_ndx': processes.index(pcurr) } )
-                    time += elapsed
+                    # only adjust time and add to sequence once if there are multiple PNAs with same arrival time
+                    if i == 0 or pna['arrival_time'] != not_arrived[i-1]['arrival_time']:
+                        elapsed = pna['arrival_time'] - time
+                        pcurr['remaining_time'] -= elapsed
+                        bt = pcurr['burst_time'] - pcurr['remaining_time']
+                        pcurr['time_executing'] += bt
+                        if sequence[-1]['key'] != pcurr['key']: 
+                            pcurr['last_start_time'] = time
+                            pcurr['last_burst'] = bt
+                        else:
+                            pcurr['last_burst'] += bt
+                        sequence.append({ 'key': pcurr['key'], 'start_time': time, 'burst_time': bt, 'p_ndx': processes.index(pcurr) } )
+                        time += elapsed
+                    # if preempted
                     if( pna['remaining_time'] < pcurr['remaining_time'] ):
                         pcurr = pna
                         end = time + pcurr['remaining_time']
@@ -131,6 +146,7 @@ def p_sjf(processes, num_processes):
 
             ready_queue.remove(pcurr)
             time = end
+
             if not ready_queue:
                 time = not_arrived[0]['arrival_time']
                 next_arrivals = []
@@ -139,7 +155,7 @@ def p_sjf(processes, num_processes):
                         next_arrivals.append(pna)
                     else:
                         break 
-                ready_queue.append(next_arrivals[0])
+                ready_queue.append( min(next_arrivals, key = lambda job: job['burst_time']) )
                 not_arrived.pop(0)
                 sequence.append({ 'key': '-', 'start_time': end, 'burst_time': time - end } )
               
@@ -173,6 +189,7 @@ def rr(processes, num_processes, time_slice):
 
     while(completed < num_processes):
         if not ready_queue:
+            # processor is idle
             ready_queue.append(not_arrived[0])
             not_arrived.pop(0)
             idle_time = ready_queue[0]['arrival_time'] - time
@@ -187,6 +204,7 @@ def rr(processes, num_processes, time_slice):
             p['last_start_time'] = time
             completed += 1
             if(rt < 0):
+                # time executing is less than time slice
                 ready_queue[0]['remaining_time'] = 0
                 time += time_slice + rt
                 
@@ -212,6 +230,10 @@ def rr(processes, num_processes, time_slice):
     return processes, sequence
 
 def np_ps(processes, num_processes):
+    # the lower the number, the higher the priority
+    # code is the same as in np_sjf only that 
+    # the priority is used in selecting the process
+    # to be executed instead of the burst time
     if num_processes == 1:
         time = processes[0]['arrival_time']
         sequence = [{ 'key': processes[0]['key'], 'start_time': time, 'burst_time': processes[0]['burst_time'] }]
@@ -500,7 +522,7 @@ def main():
                         print(f"\n {Color.YELLOW} GANTT CHART:")
                         print_chart(p_and_seq[1], len(p_and_seq[1]))
                         print_tabular(p_and_seq[0], total_wt, avg_wt)
-                        
+
                     except ValueError:
                          print(f"{Color.RED} \n Invalid input. Arrival time must be a number.")
 
