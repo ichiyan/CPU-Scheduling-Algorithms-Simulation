@@ -27,7 +27,7 @@ def print_chart(processes, num_processes):
     print("\n", 100 * f"{Color.CYAN}-")
     for ndx, p in enumerate(processes):
         space = int(float(p['burst_time']) / total_burst * 100.0 / 2)
-        if(p['key'] == processes[ndx-1]['key']): #if current is same as previous
+        if(ndx >=1 and p['key'] == processes[ndx-1]['key']): #if current is same as previous
             print(space * f"{Color.WHITE}.", end ="")
         else:
             if(p['burst_time']>9 or p['key']==1):
@@ -42,12 +42,12 @@ def print_chart(processes, num_processes):
     for i, p in enumerate(processes):
         space = int(float(p['burst_time']) / total_burst * 100.0 / 2)
         if(p['burst_time']>9):
-            if(p['key'] == processes[i-1]['key']): #if current is same as previous
+            if(i >=1 and p['key'] == processes[i-1]['key']): #if current is same as previous
                 print( space * f"{Color.WHITE}.", end ="")
             else:
                 print( f"{Color.CYAN}|", f"{Color.WHITE} {p['start_time']}", space * f"{Color.WHITE}.", end ="")
         else: #has extra space at the end for better alignment
-            if(p['key'] == processes[i-1]['key']): #if current is same as previous
+            if(i >=1 and p['key'] == processes[i-1]['key']): #if current is same as previous
                 print(space * f"{Color.WHITE}.", end ="")
             else:
                 print( f"{Color.CYAN}  |", f"{Color.WHITE} {p['start_time']}", space * f"{Color.WHITE}.", end ="")
@@ -231,27 +231,92 @@ def rr(processes, num_processes, time_slice):
 
 def np_ps(processes, num_processes):
     processes.sort(key = lambda p: p['arrival_time'])
-    
-    time = processes[0]['start_time'] = processes[0]['arrival_time']
+    ready_queue = [processes[0]]
+    last_arrival = processes[num_processes-1]['arrival_time']
+    sequence = []
+    completed = 0
+    curr = 0
+    next = 1
+    time = processes[0]['arrival_time']
     processes[0]['waiting_time'] = 0
-    ready_queue = []
-    completed = 1
-    prev = 0
-    while completed < num_processes:
-        end = time + processes[prev]['burst_time']
-        for p in processes:
-            if(p['arrival_time'] in range(time + 1, end + 1)):
-                ready_queue.append(p)
-        curr_process = min(ready_queue, key = lambda p: p['priority'])
-        curr_process['start_time'] = end
-        curr_process['waiting_time'] = end - curr_process['arrival_time']
+
+    while next < num_processes:
+        print("M_Index? ", curr, next, processes)
+        #if multiple processes have the same arrival time
+        while(processes[curr]['arrival_time'] == processes[next]['arrival_time']):
+            print("COMPARE", processes[curr]['key'], processes[next]['key'])
+            exists = 0
+            for r in ready_queue:
+                print('ready loop ', processes[next]['key'], r['key'])
+                if(processes[next]['key'] == r['key']):
+                    exists += 1
+                # else:
+                #     exists = 0
+            if(exists == 0):
+                ready_queue.append(processes[next])
+                time = processes[next]['arrival_time']
+                curr += 1
+                next = curr + 1
+    
+        execute = ready_queue.index(  min(ready_queue, key = lambda p: p['priority']))
+        sequence.append({ 'key': ready_queue[execute]['key'], 'start_time': time,  'burst_time': ready_queue[execute]['burst_time']})
         completed += 1
-        ready_queue.remove(curr_process)
-        prev = processes.index(curr_process)
-        time = end
+        time += ready_queue[execute]['burst_time']
+
+        #idle time
+        if((time + ready_queue[execute]['burst_time']) < processes[next]['arrival_time']): 
+            time += ready_queue[execute]['burst_time']
+            idle_time = processes[next]['arrival_time'] - time
+            sequence.append({ 'key': '-', 'start_time': time,  'burst_time': idle_time})
+
+        print(time)
+        print(execute, ready_queue[execute]['burst_time'])
+        print(ready_queue)
+
+        for p in processes:
+            exists = 0
+            for r in ready_queue:
+                if(p['key'] == r['key']):
+                    exists += 1   
+            if(exists == 0 and p['arrival_time'] in range((time - ready_queue[execute]['burst_time']), time)):
+                ready_queue.append(p)
+                curr += 1
+                next = curr + 1
+                print("first: ", time)
+        ready_queue.remove(ready_queue[execute])
+
+    #when the last process arrives (to avoid having error when checking NEXT index)
+    execute = ready_queue.index(  min(ready_queue, key = lambda p: p['priority']))
+    sequence.append({ 'key': ready_queue[execute]['key'], 'start_time': time,  'burst_time': ready_queue[execute]['burst_time']})
+    completed += 1
+    time += ready_queue[execute]['burst_time']
+    ready_queue.remove(ready_queue[execute])
+    print(ready_queue)
+
+    #executes processes that arrived in the ready_queue but wasn't priority
+    while(len(ready_queue) > 0):
+        execute = ready_queue.index(  min(ready_queue, key = lambda p: p['priority']) )
+        sequence.append({ 'key': ready_queue[execute]['key'], 'start_time': (sequence[completed-1]['start_time']+sequence[completed-1]['burst_time']),  'burst_time': ready_queue[execute]['burst_time'] })
+        completed += 1
+        ready_queue.remove(ready_queue[execute])
+        print(ready_queue)
+
+    smallest = processes.index(  min(processes, key = lambda p: p['priority']) )
+    for x, p in enumerate(processes):
+        for trav, s in enumerate(sequence):
+            if(p['key'] == s['key']):
+                if(p['priority'] == processes[smallest]['priority'] or trav == 0):
+                    p['waiting_time'] = 0
+                else:
+                    end_time = (s['start_time'] + s['burst_time'])
+                    turnaround = end_time - p['arrival_time']
+                    p['waiting_time'] = turnaround - p['burst_time']
+                    print("prev:", sequence[trav-1])
+                    print("curr:", sequence[trav])
+                    #p['waiting_time'] = sequence[trav-1]['start_time'] + sequence[trav-1]['burst_time']
 
     processes.sort(key = lambda p: p['waiting_time'])
-    return processes, ' '
+    return processes, sequence
 
 
 def p_ps(processes, num_processes):
@@ -340,15 +405,12 @@ def p_ps(processes, num_processes):
                 if(p['priority'] == processes[smallest]['priority']):
                     p['waiting_time'] = 0
                 else:
-                    # sub_wait = temp
-                    # temp = s['start_time']+s['burst_time']
-                    # p['waiting_time'] = temp - sub_wait
                     p['waiting_time'] = (s['start_time'] + s['burst_time'])- p['arrival_time'] - p['burst_time']
                 print("WAIT", temp, sub_wait, p)
 
-    # print("done: ", ready_queue)
-    # print("seq", sequence)
-    # print("pro", processes)
+    print("done: ", ready_queue)
+    print("seq", sequence)
+    print("pro", processes)
 
     return processes, sequence
 
@@ -414,6 +476,7 @@ def main():
                             print_chart(p_and_seq[0], num_processes)
                         else:
                             num_sequence = len(p_and_seq[1])
+                            print("to chart: ", p_and_seq[1])
                             print_chart(p_and_seq[1], num_sequence)
 
                         print_tabular(p_and_seq[0], total_wt, avg_wt)
