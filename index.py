@@ -229,84 +229,6 @@ def rr(processes, num_processes, time_slice):
 
     return processes, sequence
 
-def np_ps(processes, num_processes):
-    processes.sort(key = lambda p: p['priority'])
-    processes.sort(key = lambda p: p['arrival_time'])
-    ready_queue = [processes[0]]
-    last_arrival = processes[num_processes-1]['arrival_time']
-    sequence = []
-    completed = 0
-    curr = 0
-    next = 1
-    time = processes[0]['arrival_time']
-    processes[0]['waiting_time'] = 0
-    print(processes)
-
-    while next < num_processes:
-        #if multiple processes have the same arrival time
-        while(processes[curr]['arrival_time'] == processes[next]['arrival_time']):
-            exists = 0
-            for r in ready_queue:
-                if(processes[next]['key'] == r['key']):
-                    exists += 1
-            if(exists == 0):
-                ready_queue.append(processes[next])
-                time = processes[next]['arrival_time']
-                curr += 1
-                next = curr + 1
-    
-        execute = ready_queue.index(  min(ready_queue, key = lambda p: p['priority']))
-        sequence.append({ 'key': ready_queue[execute]['key'], 'start_time': time,  'burst_time': ready_queue[execute]['burst_time']})
-        completed += 1
-        time += ready_queue[execute]['burst_time']
-
-        #idle time - if no other process has arrived after the prev process was completed
-        if((time + ready_queue[execute]['burst_time']) < processes[next]['arrival_time']): 
-            time += ready_queue[execute]['burst_time']
-            idle_time = processes[next]['arrival_time'] - time
-            sequence.append({ 'key': '-', 'start_time': time,  'burst_time': idle_time})
-
-        #new processes enters the ready_queue
-        for p in processes:
-            exists = 0
-            for r in ready_queue: #prevents duplicates in ready_queue
-                if(p['key'] == r['key']):
-                    exists += 1   
-            if(exists == 0 and p['arrival_time'] in range((time - ready_queue[execute]['burst_time']), time)):
-                ready_queue.append(p)
-                curr += 1
-                next = curr + 1
-        ready_queue.remove(ready_queue[execute])
-
-    #when the last process arrives (to avoid having error when checking NEXT index)
-    execute = ready_queue.index(  min(ready_queue, key = lambda p: p['priority']))
-    sequence.append({ 'key': ready_queue[execute]['key'], 'start_time': time,  'burst_time': ready_queue[execute]['burst_time']})
-    completed += 1
-    time += ready_queue[execute]['burst_time']
-    ready_queue.remove(ready_queue[execute])
-
-    #executes processes that arrived in the ready_queue but wasn't priority
-    while(len(ready_queue) > 0):
-        execute = ready_queue.index(  min(ready_queue, key = lambda p: p['priority']) )
-        sequence.append({ 'key': ready_queue[execute]['key'], 'start_time': (sequence[completed-1]['start_time']+sequence[completed-1]['burst_time']),  'burst_time': ready_queue[execute]['burst_time'] })
-        completed += 1
-        ready_queue.remove(ready_queue[execute])
-
-    smallest = processes.index(  min(processes, key = lambda p: p['priority']) )
-    for x, p in enumerate(processes):
-        for trav, s in enumerate(sequence):
-            if(p['key'] == s['key']):
-                if(p['priority'] == processes[smallest]['priority'] or trav == 0):
-                    p['waiting_time'] = 0
-                else:
-                    end_time = (s['start_time'] + s['burst_time'])
-                    turnaround = end_time - p['arrival_time']
-                    p['waiting_time'] = turnaround - p['burst_time']
-
-    processes.sort(key = lambda p: p['waiting_time'])
-    return processes, sequence
-
-
 # def np_ps(processes, num_processes):
 #     processes.sort(key = lambda p: p['priority'])
 #     processes.sort(key = lambda p: p['arrival_time'])
@@ -383,6 +305,53 @@ def np_ps(processes, num_processes):
 
 #     processes.sort(key = lambda p: p['waiting_time'])
 #     return processes, sequence
+
+def np_ps(processes, num_processes):
+    # the lower the number, the higher the priority
+    # code is the same as in np_sjf only that 
+    # the priority is used in selecting the process
+    # to be executed instead of the burst time
+    if num_processes == 1:
+        time = processes[0]['arrival_time']
+        sequence = [{ 'key': processes[0]['key'], 'start_time': time, 'burst_time': processes[0]['burst_time'] }]
+        processes[0]['waiting_time'] = 0
+    else:
+        processes.sort(key = lambda p: p['arrival_time'])
+        second_arrival = next( (pr for pr in processes if pr['arrival_time'] != processes[0]['arrival_time']), -1)
+        sj = min( processes[: processes.index(second_arrival) if second_arrival != -1 else num_processes ], key = lambda pro: pro['priority'])
+        time = sj['arrival_time']
+        sj_ndx = processes.index(sj)
+        processes[sj_ndx]['waiting_time'] = 0
+        bt = processes[sj_ndx]['burst_time']
+        ready_queue = []
+        sequence = [{ 'key': sj['key'], 'start_time': time, 'burst_time': sj['burst_time'] }]
+        not_arrived = processes.copy()
+        not_arrived.pop(sj_ndx)
+        completed = 1
+    
+        while completed < num_processes:
+            end = time + bt
+            arrived_ctr = 0
+            for pna in not_arrived:
+                if(pna['arrival_time'] in range(time, end + 1)):
+                    ready_queue.append(pna)
+                    arrived_ctr += 1
+            del not_arrived[:arrived_ctr]
+            time = end
+            if ready_queue:
+                curr_process = min(ready_queue, key = lambda p: p['priority'])
+                curr_process['waiting_time'] = end - curr_process['arrival_time']
+                completed += 1
+                ready_queue.remove(curr_process)
+                prev = processes.index(curr_process)
+                bt = processes[prev]['burst_time']
+                sequence.append({ 'key': processes[prev]['key'], 'start_time': time, 'burst_time': processes[prev]['burst_time'] })
+            else:
+                bt = not_arrived[0]['arrival_time'] - end
+                sequence.append({ 'key': '-', 'start_time': end, 'burst_time': bt })
+
+    return processes, sequence
+
 
 def p_ps(processes, num_processes):
     processes.sort(key = lambda p: p['arrival_time'])
